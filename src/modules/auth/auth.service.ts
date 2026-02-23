@@ -23,7 +23,16 @@ export const registerUser = async (
     passwordHash,
   });
 
-  return user;
+  const accessToken = generateAccessToken(user._id.toString(), "user");
+
+  return {
+    user: {
+      id: user._id,
+      username: user.username,
+      email: user.email,
+    },
+    accessToken,
+  };
 };
 
 export const loginUser = async (

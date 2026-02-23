@@ -1,9 +1,12 @@
 import { Socket, Namespace } from "socket.io";
 import { MatchQueue } from "./chat.queue";
 import { RoomManager } from "./chat.room.manager";
-import { MessageRateState, SocketId, UserState } from "./chat.types";
+import { MessageRateState, Room, SocketId, UserState } from "./chat.types";
+import { ServerToClientPayloads } from "./chat.contracts";
 
 import { chatConfig } from "../../config/chat.config";
+import logger from "../../config/logger.config";
+
 
 export class ChatService {
   private queue = new MatchQueue();
@@ -14,8 +17,13 @@ export class ChatService {
   private skipPairs: Map<string, number> = new Map();
 
 
-  constructor(private io: Namespace) {}
-
+constructor(private io: Namespace) {
+  setInterval(() => {
+   logger.info(
+  `Chat health status | queue=${this.queue.size()} | rooms=${this.roomManager.activeRoomCount()} | sockets=${this.io.sockets.size}`
+);
+  }, 30000);
+}
 
 
   findMatch(socket: Socket): void {
@@ -23,7 +31,8 @@ export class ChatService {
 
     if (this.queue.hasUser(socketId)) return;
     if (this.queue.size() >= chatConfig.maxQueueSize) {
-  socket.emit("server_busy");
+  const payload: ServerToClientPayloads["server_busy"] = {};
+  socket.emit("server_busy", payload);
   return;
 }
 
@@ -33,8 +42,12 @@ export class ChatService {
     this.queue.addUser(socketId);
 
     let match = this.queue.findMatch();
+    // Prevent tight-looping when only blocked pairs are available.
+    let attempts = 0;
+    const maxAttempts = Math.max(this.queue.size() + 1, 1);
 
-    while (match) {
+    while (match && attempts < maxAttempts) {
+      attempts++;
       const [user1, user2] = match;
 
       const pairKey = [user1, user2].sort().join("#");
@@ -58,12 +71,26 @@ export class ChatService {
       this.io.sockets.get(user1)?.join(room.roomId);
       this.io.sockets.get(user2)?.join(room.roomId);
 
-      this.io.to(room.roomId).emit("matched", {
+      const payload: ServerToClientPayloads["matched"] = {
         roomId: room.roomId,
-      });
+      };
+
+      this.io.to(room.roomId).emit("matched", payload);
 
       return;
     }
+  }
+
+  getRoomBySocket(socketId: SocketId): Room | null {
+    return this.roomManager.getRoomBySocket(socketId);
+  }
+
+  getPartnerSocketId(socketId: SocketId): SocketId | null {
+    const room = this.roomManager.getRoomBySocket(socketId);
+    if (!room) return null;
+
+    const [user1, user2] = room.users;
+    return user1 === socketId ? user2 : user1;
   }
 
   // ===================== MESSAGE HANDLING =====================
@@ -78,9 +105,10 @@ handleMessage(socket: Socket, message: string): void {
 
   // Hard character limit safety
 if (trimmed.length > chatConfig.maxMessageLength) {
-    socket.emit("message_error", {
+    const payload: ServerToClientPayloads["message_error"] = {
       message: "Message too long.",
-    });
+    };
+    socket.emit("message_error", payload);
     return;
   }
 
@@ -88,9 +116,10 @@ if (trimmed.length > chatConfig.maxMessageLength) {
   const wordCount = trimmed.split(/\s+/).length;
 
  if (wordCount > chatConfig.maxWords) {
-    socket.emit("message_error", {
+    const payload: ServerToClientPayloads["message_error"] = {
       message: `Maximum ${chatConfig.maxWords} words allowed.`,
-    });
+    };
+    socket.emit("message_error", payload);
     return;
   }
 
@@ -108,9 +137,10 @@ if (trimmed.length > chatConfig.maxMessageLength) {
   );
 
   if (state.timestamps.length >= chatConfig.messageLimit) {
-    socket.emit("rate_limited", {
+    const payload: ServerToClientPayloads["rate_limited"] = {
       message: "You are sending messages too fast.",
-    });
+    };
+    socket.emit("rate_limited", payload);
     return;
   }
 
@@ -119,11 +149,13 @@ if (trimmed.length > chatConfig.maxMessageLength) {
   const room = this.roomManager.getRoomBySocket(socketId);
   if (!room) return;
 
-  this.io.to(room.roomId).emit("message", {
+  const payload: ServerToClientPayloads["message"] = {
     sender: socketId,
     message: trimmed,
     timestamp: now,
-  });
+  };
+
+  this.io.to(room.roomId).emit("message", payload);
 }
 
   // ===================== SKIP =====================
@@ -135,9 +167,10 @@ if (trimmed.length > chatConfig.maxMessageLength) {
     const state = this.userStates.get(socketId) || {};
 
     if (state.lastSkipAt && now - state.lastSkipAt < chatConfig.skipCooldown) {
-      socket.emit("skip_cooldown", {
+      const payload: ServerToClientPayloads["skip_cooldown"] = {
         remaining: chatConfig.skipCooldown - (now - state.lastSkipAt),
-      });
+      };
+      socket.emit("skip_cooldown", payload);
       return;
     }
 
@@ -160,7 +193,8 @@ if (trimmed.length > chatConfig.maxMessageLength) {
 
     this.roomManager.removeRoom(room.roomId);
 
-    this.io.to(partnerId).emit("partner_skipped");
+    const skippedPayload: ServerToClientPayloads["partner_skipped"] = {};
+    this.io.to(partnerId).emit("partner_skipped", skippedPayload);
 
     const partnerSocket = this.io.sockets.get(partnerId);
     if (partnerSocket) this.findMatch(partnerSocket);
@@ -185,7 +219,9 @@ if (trimmed.length > chatConfig.maxMessageLength) {
 
     this.roomManager.removeRoom(room.roomId);
 
-    this.io.to(partnerId).emit("partner_disconnected");
+    const disconnectedPayload: ServerToClientPayloads["partner_disconnected"] =
+      {};
+    this.io.to(partnerId).emit("partner_disconnected", disconnectedPayload);
 
     const partnerSocket = this.io.sockets.get(partnerId);
     if (partnerSocket) {

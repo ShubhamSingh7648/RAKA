@@ -21,3 +21,13 @@ export interface UserState {
 export interface MessageRateState {
   timestamps: number[];
 }
+export type SocketIdentity =
+  | {
+      type: "guest";
+      guestId: string;
+    }
+  | {
+      type: "user";
+      guestId: string;
+      userId: string;
+    };

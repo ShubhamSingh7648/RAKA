@@ -11,3 +11,10 @@ export const generateAccessToken = (
     { expiresIn: "15m" }
   );
 };
+
+export const verifyAccessToken = (token: string) => {
+  return jwt.verify(token, serverConfig.JWT_SECRET) as {
+    userId: string;
+    role: string;
+  };
+};
