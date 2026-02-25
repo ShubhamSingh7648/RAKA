@@ -3,6 +3,11 @@ import { MatchQueue } from "./chat.queue";
 import { RoomManager } from "./chat.room.manager";
 import { MessageRateState, Room, SocketId, UserState } from "./chat.types";
 import { ServerToClientPayloads } from "./chat.contracts";
+import {
+  buildConversationParticipantsKey,
+  Conversation,
+} from "./models/conversation.model";
+import { Message } from "./models/message.model";
 
 import { chatConfig } from "../../config/chat.config";
 import logger from "../../config/logger.config";
@@ -17,16 +22,15 @@ export class ChatService {
   private skipPairs: Map<string, number> = new Map();
 
 
-constructor(private io: Namespace) {
-  setInterval(() => {
-   logger.info(
-  `Chat health status | queue=${this.queue.size()} | rooms=${this.roomManager.activeRoomCount()} | sockets=${this.io.sockets.size}`
-);
-  }, 30000);
-}
+  constructor(private io: Namespace) {
+    setInterval(() => {
+      logger.info(
+        `Chat health status | queue=${this.queue.size()} | rooms=${this.roomManager.activeRoomCount()} | sockets=${this.io.sockets.size}`
+      );
+    }, 30000);
+  }
 
-
-  findMatch(socket: Socket): void {
+  async findMatch(socket: Socket): Promise<void> {
     const socketId = socket.id;
 
     if (this.queue.hasUser(socketId)) return;
@@ -66,7 +70,8 @@ constructor(private io: Namespace) {
         }
       }
 
-      const room = this.roomManager.createRoom(user1, user2);
+      const conversationId = await this.createOrActivateConversation(user1, user2);
+      const room = this.roomManager.createRoom(user1, user2, conversationId || undefined);
 
       this.io.sockets.get(user1)?.join(room.roomId);
       this.io.sockets.get(user2)?.join(room.roomId);
@@ -94,73 +99,105 @@ constructor(private io: Namespace) {
   }
 
   // ===================== MESSAGE HANDLING =====================
-handleMessage(socket: Socket, message: string): void {
-  const socketId = socket.id;
+  async handleMessage(socket: Socket, message: string): Promise<void> {
+    const socketId = socket.id;
 
-  if (typeof message !== "string") return;
+    if (typeof message !== "string") return;
 
-  const trimmed = message.trim();
+    const trimmed = message.trim();
 
-  if (!trimmed) return;
+    if (!trimmed) return;
 
-  // Hard character limit safety
-if (trimmed.length > chatConfig.maxMessageLength) {
-    const payload: ServerToClientPayloads["message_error"] = {
-      message: "Message too long.",
+    // Hard character limit safety
+    if (trimmed.length > chatConfig.maxMessageLength) {
+      const payload: ServerToClientPayloads["message_error"] = {
+        message: "Message too long.",
+      };
+      socket.emit("message_error", payload);
+      return;
+    }
+
+    // Word limit check
+    const wordCount = trimmed.split(/\s+/).length;
+
+    if (wordCount > chatConfig.maxWords) {
+      const payload: ServerToClientPayloads["message_error"] = {
+        message: `Maximum ${chatConfig.maxWords} words allowed.`,
+      };
+      socket.emit("message_error", payload);
+      return;
+    }
+
+    // ===== Rate limiting logic (already exists) =====
+    const now = Date.now();
+    let state = this.messageRateMap.get(socketId);
+
+    if (!state) {
+      state = { timestamps: [] };
+      this.messageRateMap.set(socketId, state);
+    }
+
+    state.timestamps = state.timestamps.filter(
+      (ts) => now - ts < chatConfig.messageWindow
+    );
+
+    if (state.timestamps.length >= chatConfig.messageLimit) {
+      const payload: ServerToClientPayloads["rate_limited"] = {
+        message: "You are sending messages too fast.",
+      };
+      socket.emit("rate_limited", payload);
+      return;
+    }
+
+    state.timestamps.push(now);
+
+    const room = this.roomManager.getRoomBySocket(socketId);
+    if (!room) return;
+
+    const payload: ServerToClientPayloads["message"] = {
+      sender: socketId,
+      message: trimmed,
+      timestamp: now,
     };
-    socket.emit("message_error", payload);
-    return;
+
+    if (room.conversationId) {
+      const identity = socket.data.identity;
+      const senderId =
+        identity?.type === "user"
+          ? identity.userId
+          : identity?.type === "guest"
+          ? identity.guestId
+          : socketId;
+
+      const messageDoc = await Message.create({
+        conversationId: room.conversationId,
+        senderId,
+        content: trimmed,
+        deliveredTo: [],
+        readBy: [],
+      });
+
+      await Conversation.updateOne(
+        { _id: room.conversationId },
+        {
+          $set: {
+            lastMessage: {
+              senderId,
+              content: trimmed,
+              createdAt: messageDoc.createdAt,
+            },
+            updatedAt: new Date(now),
+          },
+        }
+      );
+    }
+
+    this.io.to(room.roomId).emit("message", payload);
   }
-
-  // Word limit check
-  const wordCount = trimmed.split(/\s+/).length;
-
- if (wordCount > chatConfig.maxWords) {
-    const payload: ServerToClientPayloads["message_error"] = {
-      message: `Maximum ${chatConfig.maxWords} words allowed.`,
-    };
-    socket.emit("message_error", payload);
-    return;
-  }
-
-  // ===== Rate limiting logic (already exists) =====
-  const now = Date.now();
-  let state = this.messageRateMap.get(socketId);
-
-  if (!state) {
-    state = { timestamps: [] };
-    this.messageRateMap.set(socketId, state);
-  }
-
-  state.timestamps = state.timestamps.filter(
-    (ts) => now - ts < chatConfig.messageWindow
-  );
-
-  if (state.timestamps.length >= chatConfig.messageLimit) {
-    const payload: ServerToClientPayloads["rate_limited"] = {
-      message: "You are sending messages too fast.",
-    };
-    socket.emit("rate_limited", payload);
-    return;
-  }
-
-  state.timestamps.push(now);
-
-  const room = this.roomManager.getRoomBySocket(socketId);
-  if (!room) return;
-
-  const payload: ServerToClientPayloads["message"] = {
-    sender: socketId,
-    message: trimmed,
-    timestamp: now,
-  };
-
-  this.io.to(room.roomId).emit("message", payload);
-}
 
   // ===================== SKIP =====================
 
-  skip(socket: Socket): void {
+  async skip(socket: Socket): Promise<void> {
     const socketId = socket.id;
     const now = Date.now();
 
@@ -179,10 +216,7 @@ if (trimmed.length > chatConfig.maxMessageLength) {
 
     const room = this.roomManager.getRoomBySocket(socketId);
 
-    if (!room) {
-      this.findMatch(socket);
-      return;
-    }
+    if (!room) return;
 
     const [user1, user2] = room.users;
     const partnerId = user1 === socketId ? user2 : user1;
@@ -191,20 +225,17 @@ if (trimmed.length > chatConfig.maxMessageLength) {
     const pairKey = [user1, user2].sort().join("#");
     this.skipPairs.set(pairKey, Date.now() + chatConfig.skipBlockTime);
 
+    await this.markConversationInactive(room);
     this.roomManager.removeRoom(room.roomId);
 
     const skippedPayload: ServerToClientPayloads["partner_skipped"] = {};
     this.io.to(partnerId).emit("partner_skipped", skippedPayload);
 
-    const partnerSocket = this.io.sockets.get(partnerId);
-    if (partnerSocket) this.findMatch(partnerSocket);
-
-    this.findMatch(socket);
   }
 
   // ===================== DISCONNECT =====================
 
-  handleDisconnect(socket: Socket): void {
+  async handleDisconnect(socket: Socket): Promise<void> {
     const socketId = socket.id;
 
     this.queue.removeUser(socketId);
@@ -217,15 +248,62 @@ if (trimmed.length > chatConfig.maxMessageLength) {
     const [user1, user2] = room.users;
     const partnerId = user1 === socketId ? user2 : user1;
 
+    await this.markConversationInactive(room);
     this.roomManager.removeRoom(room.roomId);
 
     const disconnectedPayload: ServerToClientPayloads["partner_disconnected"] =
       {};
     this.io.to(partnerId).emit("partner_disconnected", disconnectedPayload);
 
-    const partnerSocket = this.io.sockets.get(partnerId);
-    if (partnerSocket) {
-      this.findMatch(partnerSocket);
-    }
+  }
+
+  private getParticipantIdFromSocket(socketId: SocketId): string | null {
+    const socket = this.io.sockets.get(socketId);
+    const identity = socket?.data?.identity;
+    if (identity?.type === "user") return identity.userId;
+    if (identity?.type === "guest") return identity.guestId;
+    return socketId;
+  }
+
+  private async createOrActivateConversation(
+    socketIdA: SocketId,
+    socketIdB: SocketId
+  ): Promise<string | null> {
+    const participantIdA = this.getParticipantIdFromSocket(socketIdA);
+    const participantIdB = this.getParticipantIdFromSocket(socketIdB);
+
+    if (!participantIdA || !participantIdB) return null;
+
+    const [participant1, participant2] = [participantIdA, participantIdB].sort();
+    const pairKey = buildConversationParticipantsKey(participant1, participant2);
+    // Keep random conversation keys distinct from private keys to avoid unique-index collisions.
+    const participantsKey = `random:${pairKey}:${Date.now()}:${Math.random()
+      .toString(36)
+      .slice(2, 10)}`;
+    const conversation = await Conversation.create({
+      participants: [participant1, participant2],
+      participantsKey,
+      type: "random",
+      isActive: true,
+    });
+
+    return conversation?._id?.toString() || null;
+  }
+
+  async closeRoomBySocket(socketId: SocketId): Promise<Room | null> {
+    const room = this.roomManager.getRoomBySocket(socketId);
+    if (!room) return null;
+    await this.markConversationInactive(room);
+    this.roomManager.removeRoom(room.roomId);
+    return room;
+  }
+
+  private async markConversationInactive(room: Room): Promise<void> {
+    if (!room.conversationId) return;
+
+    await Conversation.updateOne(
+      { _id: room.conversationId },
+      { $set: { isActive: false } }
+    );
   }
 }

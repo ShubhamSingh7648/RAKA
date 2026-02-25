@@ -2,11 +2,18 @@ import assert from "node:assert/strict";
 import { io, Socket } from "socket.io-client";
 
 const BASE_URL = process.env.BASE_URL || "http://localhost:3001";
-const SOCKET_URL = process.env.SOCKET_URL || "http://localhost:3001/chat";
+const CHAT_SOCKET_URL = process.env.SOCKET_URL || "http://localhost:3001/chat";
+const PRIVATE_SOCKET_URL =
+  process.env.PRIVATE_SOCKET_URL || "http://localhost:3001/private";
 
 type LoginResponse = {
   success: boolean;
   data: {
+    user: {
+      id: string;
+      username: string;
+      email: string;
+    };
     accessToken: string;
   };
 };
@@ -87,12 +94,21 @@ async function registerAndLogin(prefix: string) {
 
   return {
     token: loginData.data.accessToken,
+    userId: loginData.data.user.id,
     username,
   };
 }
 
 function connectClient(token: string) {
-  return io(SOCKET_URL, {
+  return io(CHAT_SOCKET_URL, {
+    transports: ["websocket"],
+    auth: { token },
+    reconnection: false,
+  });
+}
+
+function connectPrivateClient(token: string) {
+  return io(PRIVATE_SOCKET_URL, {
     transports: ["websocket"],
     auth: { token },
     reconnection: false,
@@ -100,18 +116,25 @@ function connectClient(token: string) {
 }
 
 async function run() {
-  console.log(`[SMOKE] Using BASE_URL=${BASE_URL}, SOCKET_URL=${SOCKET_URL}`);
+  console.log(`[SMOKE] Using BASE_URL=${BASE_URL}`);
+  console.log(
+    `[SMOKE] Chat namespace=${CHAT_SOCKET_URL}, Private namespace=${PRIVATE_SOCKET_URL}`
+  );
 
   const user1 = await registerAndLogin("smoke_a");
   const user2 = await registerAndLogin("smoke_b");
 
   const socketA = connectClient(user1.token);
   const socketB = connectClient(user2.token);
+  const privateSocketA = connectPrivateClient(user1.token);
+  const privateSocketB = connectPrivateClient(user2.token);
 
   try {
     await Promise.all([
       waitForEvent(socketA, "connect"),
       waitForEvent(socketB, "connect"),
+      waitForEvent(privateSocketA, "connect"),
+      waitForEvent(privateSocketB, "connect"),
     ]);
 
     const roomId = await matchPair(socketA, socketB);
@@ -136,10 +159,89 @@ async function run() {
       "accepted request id should match sent request id"
     );
 
-    console.log("[SMOKE] PASS: chat match + friend request accept flow");
+    privateSocketA.emit("open_private_chat", { friendUserId: user2.userId });
+    const openedA = await waitForEvent<{
+      conversationId: string;
+      roomId: string;
+    }>(privateSocketA, "private_chat_opened");
+
+    privateSocketB.emit("open_private_chat", { friendUserId: user1.userId });
+    const openedB = await waitForEvent<{
+      conversationId: string;
+      roomId: string;
+    }>(privateSocketB, "private_chat_opened");
+
+    assert.equal(
+      openedA.conversationId,
+      openedB.conversationId,
+      "private conversation should be same for both users"
+    );
+
+    const privateMessagePromise = waitForEvent<{
+      conversationId: string;
+      senderId: string;
+      content: string;
+      createdAt: number;
+    }>(privateSocketB, "private_message");
+
+    privateSocketA.emit("send_private_message", {
+      conversationId: openedA.conversationId,
+      content: "hello private smoke",
+    });
+
+    const privateMessage = await privateMessagePromise;
+    assert.equal(
+      privateMessage.conversationId,
+      openedA.conversationId,
+      "private message should target opened conversation"
+    );
+    assert.equal(
+      privateMessage.content,
+      "hello private smoke",
+      "private message content should match"
+    );
+
+    privateSocketB.emit("load_private_messages", {
+      conversationId: openedA.conversationId,
+      limit: 20,
+    });
+    const loaded = await waitForEvent<{
+      conversationId: string;
+      messages: Array<{ id: string; content: string }>;
+      nextCursor: string | null;
+    }>(privateSocketB, "private_messages_loaded");
+
+    assert.equal(
+      loaded.conversationId,
+      openedA.conversationId,
+      "loaded messages should belong to opened conversation"
+    );
+    assert.equal(
+      loaded.messages.some((m) => m.content === "hello private smoke"),
+      true,
+      "loaded messages should include sent private message"
+    );
+
+    privateSocketA.emit("list_private_conversations", { limit: 10 });
+    const listed = await waitForEvent<{
+      conversations: Array<{ conversationId: string }>;
+    }>(privateSocketA, "private_conversations_listed");
+    assert.equal(
+      listed.conversations.some(
+        (conversation) => conversation.conversationId === openedA.conversationId
+      ),
+      true,
+      "conversation list should include opened conversation"
+    );
+
+    console.log(
+      "[SMOKE] PASS: random chat + friend accept + private open/send/load/list flow"
+    );
   } finally {
     socketA.disconnect();
     socketB.disconnect();
+    privateSocketA.disconnect();
+    privateSocketB.disconnect();
     await sleep(100);
   }
 }

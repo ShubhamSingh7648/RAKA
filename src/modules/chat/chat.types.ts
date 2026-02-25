@@ -7,6 +7,7 @@ export interface QueueUser {
 
 export interface Room {
   roomId: string;
+  conversationId?: string;
   users: [SocketId, SocketId];
   createdAt: number;
 }

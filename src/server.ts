@@ -12,6 +12,7 @@ import { correlationIdMiddleware } from "./middleware/corelationId";
 import logger from "./config/logger.config";
 import { connectDB } from "./config/db.config";
 import { registerChatHandlers } from "./modules/chat/chat.socket";
+import { registerPrivateHandlers } from "./modules/private/private.socket";
 
 const app = express();
 
@@ -81,6 +82,7 @@ export const io = new Server(httpServer, {
 });
 
 registerChatHandlers(io);
+registerPrivateHandlers(io);
 
 let isShuttingDown = false;
 

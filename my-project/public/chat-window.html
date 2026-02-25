@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -11,7 +11,7 @@
   <style>
     'use strict';
 
-    /* ─── Reset & Variables ─────────────────────────────────────── */
+    /* â”€â”€â”€ Reset & Variables â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
@@ -46,7 +46,7 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ─── Background texture ────────────────────────────────────── */
+    /* â”€â”€â”€ Background texture â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     body::before {
       content: '';
       position: fixed;
@@ -58,7 +58,7 @@
       z-index: 0;
     }
 
-    /* ─── App Shell ─────────────────────────────────────────────── */
+    /* â”€â”€â”€ App Shell â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #app {
       position: relative;
       z-index: 1;
@@ -69,7 +69,7 @@
       margin: 0 auto;
     }
 
-    /* ─── Header ─────────────────────────────────────────────────── */
+    /* â”€â”€â”€ Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #header {
       display: flex;
       align-items: center;
@@ -127,7 +127,7 @@
       50% { opacity: 0.5; }
     }
 
-    /* ─── Status Bar ─────────────────────────────────────────────── */
+    /* â”€â”€â”€ Status Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #status-bar {
       padding: 8px 20px;
       background: var(--surface);
@@ -193,7 +193,7 @@
       white-space: nowrap;
     }
 
-    /* ─── Messages Area ──────────────────────────────────────────── */
+    /* â”€â”€â”€ Messages Area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #messages-wrap {
       flex: 1;
       overflow-y: auto;
@@ -260,7 +260,7 @@
       color: var(--text-dim);
     }
 
-    /* ─── Message Bubbles ────────────────────────────────────────── */
+    /* â”€â”€â”€ Message Bubbles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .msg-row {
       display: flex;
       flex-direction: column;
@@ -332,7 +332,7 @@
       animation: fadeSlideIn 0.2s ease-out;
     }
 
-    /* ─── Toast ──────────────────────────────────────────────────── */
+    /* â”€â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #toast-container {
       position: fixed;
       top: 70px;
@@ -371,7 +371,7 @@
       to   { opacity: 0; transform: translateX(20px); }
     }
 
-    /* ─── Cooldown Bar ───────────────────────────────────────────── */
+    /* â”€â”€â”€ Cooldown Bar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #cooldown-bar {
       height: 2px;
       background: var(--surface3);
@@ -387,7 +387,7 @@
       transition: width 0.5s linear;
     }
 
-    /* ─── Input Area ─────────────────────────────────────────────── */
+    /* â”€â”€â”€ Input Area â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #input-area {
       padding: 14px 20px 18px;
       border-top: 1px solid var(--border);
@@ -512,7 +512,7 @@
       margin-left: auto;
     }
 
-    /* ─── Swipe Indicator ────────────────────────────────────────── */
+    /* â”€â”€â”€ Swipe Indicator â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     #swipe-indicator {
       position: fixed;
       bottom: 80px;
@@ -536,7 +536,7 @@
       transform: translateX(-50%) translateY(0);
     }
 
-    /* ─── Responsive ─────────────────────────────────────────────── */
+    /* â”€â”€â”€ Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     @media (max-width: 600px) {
       #header { padding: 12px 16px; }
       #messages-wrap { padding: 16px 14px 8px; }
@@ -580,14 +580,14 @@
     </div>
     <div id="online-badge">
       <div id="online-dot"></div>
-      <span id="online-count">— online</span>
+      <span id="online-count">â€” online</span>
     </div>
   </div>
 
   <!-- Status Bar -->
   <div id="status-bar">
     <div id="status-indicator"></div>
-    <span id="status-text">Connecting…</span>
+    <span id="status-text">Connectingâ€¦</span>
     <span id="skip-hint">Shift+Enter to skip</span>
   </div>
 
@@ -599,13 +599,13 @@
   <!-- Messages -->
   <div id="messages-wrap" role="log" aria-live="polite">
     <div id="empty-state">
-      <div class="empty-icon">👤</div>
+      <div class="empty-icon">ðŸ‘¤</div>
       <div class="empty-title">Find a stranger</div>
       <div class="empty-sub">Connect anonymously with someone new. Your identity stays hidden.</div>
       <div class="hint-keys">
         <span class="kbd">Enter</span> send
         <span class="kbd">Shift+Enter</span> skip
-        <span class="kbd">↑ swipe</span> skip on mobile
+        <span class="kbd">â†‘ swipe</span> skip on mobile
       </div>
     </div>
   </div>
@@ -615,7 +615,7 @@
     <div id="input-row" class="disabled">
       <textarea
         id="msg-input"
-        placeholder="Say something…"
+        placeholder="Say somethingâ€¦"
         rows="1"
         autocomplete="off"
         spellcheck="true"
@@ -655,7 +655,7 @@
 <div id="toast-container" aria-live="assertive"></div>
 
 <!-- Swipe Indicator -->
-<div id="swipe-indicator">↑ Release to skip</div>
+<div id="swipe-indicator">â†‘ Release to skip</div>
 
 <div id="auth-modal" style="
   position:fixed;inset:0;
@@ -722,9 +722,9 @@
 <script>
 'use strict';
 
-/* ══════════════════════════════════════════════
-   SECTION 1 — DOM REFERENCES
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 1 â€” DOM REFERENCES
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const DOM = {
   messagesWrap:   document.getElementById('messages-wrap'),
   emptyState:     document.getElementById('empty-state'),
@@ -747,9 +747,9 @@ const DOM = {
   userChipName:   document.getElementById('user-chip-name'),
 };
 
-/* ══════════════════════════════════════════════
-   SECTION 2 — STATE
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 2 â€” STATE
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const state = {
   matched:        false,
   roomId:         null,
@@ -757,20 +757,22 @@ const state = {
   cooldownTimer:  null,
   loggedIn:       false,
   username:       null,
+  lastIdentityToken: null,
+  pendingIdentityUpgradeSilent: false,
 };
 
-/* ══════════════════════════════════════════════
-   SECTION 3 — SOCKET SETUP
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 3 â€” SOCKET SETUP
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const socket = io('http://localhost:3001/chat', {
   transports: ['websocket'],
   reconnectionDelay: 1000,
   reconnectionAttempts: Infinity,
 });
 
-/* ══════════════════════════════════════════════
-   SECTION 4 — UI STATE MANAGER
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 4 â€” UI STATE MANAGER
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const UI = {
   setStatus(mode, text) {
     const { statusIndicator, statusText } = DOM;
@@ -863,9 +865,9 @@ const UI = {
   },
 };
 
-/* ══════════════════════════════════════════════
-   SECTION 5 — TOAST SYSTEM
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 5 â€” TOAST SYSTEM
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function showToast(message, type = 'error', duration = 3500) {
   const toast = document.createElement('div');
   toast.className = `toast ${type}`;
@@ -877,19 +879,95 @@ function showToast(message, type = 'error', duration = 3500) {
   }, duration);
 }
 
-/* ══════════════════════════════════════════════
-   SECTION 6 — HELPERS
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 6 â€” HELPERS
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function formatTime(ts) {
   const d = new Date(ts);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
-/* ══════════════════════════════════════════════
-   SECTION 7 — ACTIONS
-══════════════════════════════════════════════ */
+function emitLayoutBridgeEvent(type, payload = {}) {
+  if (!window.parent || window.parent === window) return;
+  window.parent.postMessage(
+    {
+      source: 'chat-window',
+      type,
+      ...payload,
+    },
+    '*'
+  );
+}
+
+function clearStoredAuth() {
+  localStorage.removeItem('jwt');
+  state.loggedIn = false;
+  state.username = null;
+  state.lastIdentityToken = null;
+  state.pendingIdentityUpgradeSilent = false;
+  DOM.loginBtn.style.display = 'inline-flex';
+  DOM.userChip.style.display = 'none';
+  DOM.userChipName.textContent = '';
+  DOM.friendReqBtn.style.display = 'none';
+}
+
+function requestIdentityUpgrade(token, options = {}) {
+  if (!token) return;
+  const silentFailure = Boolean(options.silentFailure);
+  const force = Boolean(options.force);
+
+  if (!force && state.lastIdentityToken === token) return;
+
+  state.lastIdentityToken = token;
+  state.pendingIdentityUpgradeSilent = silentFailure;
+  socket.emit('upgrade_identity', token);
+}
+
+async function hydrateAuthFromStorage() {
+  const params = new URLSearchParams(window.location.search);
+  const queryToken = params.get('token');
+  if (queryToken) {
+    localStorage.setItem('jwt', queryToken);
+  }
+
+  const token = localStorage.getItem('jwt');
+  if (!token) {
+    clearStoredAuth();
+    return;
+  }
+
+  state.loggedIn = true;
+  DOM.loginBtn.style.display = 'none';
+  DOM.userChip.style.display = 'flex';
+  DOM.userChipName.textContent = state.username || 'User';
+
+  try {
+    const res = await fetch('http://localhost:3001/api/v1/me', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    const payload = await res.json().catch(() => ({}));
+    const username = payload?.data?.username;
+    if (res.ok) {
+      if (username) {
+        state.username = username;
+        DOM.userChipName.textContent = username;
+      }
+    } else if (res.status === 401 || res.status === 403) {
+      clearStoredAuth();
+      return;
+    }
+  } catch {}
+
+  requestIdentityUpgrade(token, { silentFailure: true });
+}
+
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 7 â€” ACTIONS
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 function findMatch() {
-  UI.setStatus('searching', 'Searching for a stranger…');
+  UI.setStatus('searching', 'Searching for a strangerâ€¦');
   socket.emit('find_match');
   UI.setMatched(false);
 }
@@ -907,21 +985,32 @@ function sendMessage() {
 
 function skipChat() {
   if (state.skipCooldown) return;
+  UI.setMatched(false);
+  UI.clearMessages();
+  UI.setStatus('searching', 'Connecting to a new strangerâ€¦');
+  state.roomId = null;
+  emitLayoutBridgeEvent('random_disconnected');
   resetFriendBtn();
   socket.emit('skip');
 }
 
-/* ══════════════════════════════════════════════
-   SECTION 8 — SOCKET EVENT HANDLERS
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 8 â€” SOCKET EVENT HANDLERS
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 socket.on('connect', () => {
   UI.setStatus('', 'Connected. Tap "Start Random" to begin.');
+  const token = localStorage.getItem('jwt');
+  if (token) {
+    requestIdentityUpgrade(token, { silentFailure: true });
+  }
 });
 
 socket.on('disconnect', () => {
-  UI.setStatus('disconnected', 'Disconnected. Reconnecting…');
+  UI.setStatus('disconnected', 'Disconnected. Reconnectingâ€¦');
   UI.setMatched(false);
   state.matched = false;
+  state.lastIdentityToken = null;
+  emitLayoutBridgeEvent('random_disconnected');
 });
 
 socket.on('reconnect', () => {
@@ -933,8 +1022,9 @@ socket.on('matched', ({ roomId }) => {
   UI.clearMessages();
   UI.setStatus('matched', 'Connected with a stranger');
   UI.setMatched(true);
-  UI.appendSystemMsg('✦ You are now chatting with a stranger');
-  showToast('Matched! Say hi 👋', 'success', 2500);
+  UI.appendSystemMsg('âœ¦ You are now chatting with a stranger');
+  showToast('Matched! Say hi ðŸ‘‹', 'success', 2500);
+  emitLayoutBridgeEvent('random_matched', { roomId });
 });
 
 socket.on('message', ({ sender, message, timestamp }) => {
@@ -946,21 +1036,23 @@ socket.on('message', ({ sender, message, timestamp }) => {
 socket.on('partner_skipped', () => {
   UI.setMatched(false);
   resetFriendBtn();
-  UI.appendSystemMsg('⟶ Stranger skipped. Press Start Random to find a new match.');
+  UI.appendSystemMsg('âŸ¶ Stranger skipped. Press Start Random to find a new match.');
   UI.setStatus('', 'Ready for next match.');
   setTimeout(() => {
     UI.clearMessages();
   }, 1200);
+  emitLayoutBridgeEvent('random_disconnected');
 });
 
 socket.on('partner_disconnected', () => {
   UI.setMatched(false);
   resetFriendBtn();
-  UI.appendSystemMsg('⊘ Stranger disconnected. Press Start Random to find a new match.');
+  UI.appendSystemMsg('âŠ˜ Stranger disconnected. Press Start Random to find a new match.');
   UI.setStatus('', 'Ready for next match.');
   setTimeout(() => {
     UI.clearMessages();
   }, 1200);
+  emitLayoutBridgeEvent('random_disconnected');
 });
 
 socket.on('skip_cooldown', ({ remaining }) => {
@@ -1000,9 +1092,9 @@ socket.on('friend_error', (err) => {
   handleSocketErrorToast(err, 'Friend action failed');
 });
 
-/* ══════════════════════════════════════════════
-   SECTION 9 — KEYBOARD & INPUT EVENT HANDLERS
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 9 â€” KEYBOARD & INPUT EVENT HANDLERS
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 DOM.msgInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && e.shiftKey) {
     e.preventDefault();
@@ -1028,9 +1120,9 @@ DOM.sendBtn.addEventListener('click', sendMessage);
 DOM.skipBtn.addEventListener('click', skipChat);
 DOM.findBtn.addEventListener('click', findMatch);
 
-/* ══════════════════════════════════════════════
-   SECTION 10 — GESTURE DETECTION (Mobile Swipe)
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 10 â€” GESTURE DETECTION (Mobile Swipe)
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 const gesture = {
   startY: null,
   startX: null,
@@ -1072,18 +1164,25 @@ document.addEventListener('touchend', (e) => {
   gesture.startX = null;
 }, { passive: true });
 
-/* ══════════════════════════════════════════════
-   SECTION 11 — INIT
-══════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 11 â€” INIT
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 (function init() {
-  UI.setStatus('', 'Connecting…');
+  UI.setStatus('', 'Connectingâ€¦');
   UI.setMatched(false);
+  hydrateAuthFromStorage();
 })();
-/* ══════════════════════════════════════════════
-   SECTION 11 — AUTH + FRIEND REQUEST LOGIC
-══════════════════════════════════════════════ */
 
-/* ── Auth tab switcher ── */
+window.addEventListener('storage', (event) => {
+  if (!event.key || event.key === 'jwt') {
+    hydrateAuthFromStorage();
+  }
+});
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SECTION 11 â€” AUTH + FRIEND REQUEST LOGIC
+â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+
+/* â”€â”€ Auth tab switcher â”€â”€ */
 let currentAuthTab = 'login';
 
 function switchAuthTab(tab) {
@@ -1097,12 +1196,12 @@ function switchAuthTab(tab) {
   document.getElementById('tab-signup').style.color      = isSignup ? 'var(--text)' : 'var(--text-muted)';
 }
 
-/* ── Open modal ── */
+/* â”€â”€ Open modal â”€â”€ */
 DOM.loginBtn.addEventListener('click', () => {
   document.getElementById('auth-modal').style.display = 'flex';
 });
 
-/* ── Submit handler (login OR signup) ── */
+/* â”€â”€ Submit handler (login OR signup) â”€â”€ */
 document.getElementById('auth-submit').addEventListener('click', async () => {
   const email    = document.getElementById('auth-email').value.trim();
   const password = document.getElementById('auth-password').value.trim();
@@ -1140,7 +1239,7 @@ document.getElementById('auth-submit').addEventListener('click', async () => {
     const resolvedUsername = data.data.user?.username || username || email.split('@')[0];
 
     localStorage.setItem('jwt', token);
-    socket.emit('upgrade_identity', token);
+    requestIdentityUpgrade(token, { force: true });
 
     // Update UI
     state.loggedIn = true;
@@ -1155,25 +1254,37 @@ document.getElementById('auth-submit').addEventListener('click', async () => {
     }
 
     document.getElementById('auth-modal').style.display = 'none';
-    showToast(isSignup ? `Welcome, ${resolvedUsername}! 🎉` : 'Logged in ✓', 'success');
+    showToast(isSignup ? `Welcome, ${resolvedUsername}! ðŸŽ‰` : 'Logged in âœ“', 'success');
 
   } catch {
     showToast('Server error', 'error');
   }
 });
 
-/* ── Socket: identity upgrade confirmation ── */
+/* â”€â”€ Socket: identity upgrade confirmation â”€â”€ */
 socket.on('identity_upgraded', ({ success, message }) => {
-  if (success) showToast('Identity upgraded ✓', 'success');
-  else showToast(message || 'Token upgrade failed', 'error');
+  const silent = state.pendingIdentityUpgradeSilent;
+  state.pendingIdentityUpgradeSilent = false;
+
+  if (success) {
+    if (!silent) {
+      showToast('Identity upgraded âœ“', 'success');
+    }
+    return;
+  }
+
+  clearStoredAuth();
+  if (!silent) {
+    showToast(message || 'Token upgrade failed', 'error');
+  }
 });
 
-/* ── Friend Request: send ── */
+/* â”€â”€ Friend Request: send â”€â”€ */
 DOM.friendReqBtn.addEventListener('click', () => {
   if (!state.matched || !state.loggedIn) return;
   socket.emit('send_friend_request');
   DOM.friendReqBtn.disabled = true;
-  DOM.friendReqBtn.textContent = 'Request Sent…';
+  DOM.friendReqBtn.textContent = 'Request Sentâ€¦';
   DOM.friendReqBtn.style.color = 'var(--text-muted)';
   DOM.friendReqBtn.style.borderColor = 'var(--border)';
 });
@@ -1216,7 +1327,7 @@ socket.on('friend_request_message', (data) => {
   UI.scrollToBottom();
 });
 
-/* ── Friend Request: accepted by the other side ── */
+/* â”€â”€ Friend Request: accepted by the other side â”€â”€ */
 socket.on('friend_request_accepted', ({ username }) => {
   document
     .querySelectorAll('[data-request-id]')
@@ -1236,7 +1347,7 @@ socket.on('friend_request_accepted', ({ username }) => {
     animation:fadeSlideIn 0.3s ease-out;font-family:var(--font-body);
   `;
   el.innerHTML = `
-    <div style="font-size:20px;margin-bottom:6px;">🔒</div>
+    <div style="font-size:20px;margin-bottom:6px;">ðŸ”’</div>
     <div style="font-size:13px;font-weight:600;color:var(--accent);margin-bottom:4px;">
       ${username || 'Your stranger'} accepted your friend request!
     </div>
@@ -1246,10 +1357,19 @@ socket.on('friend_request_accepted', ({ username }) => {
   `;
   DOM.messagesWrap.appendChild(el);
   UI.scrollToBottom();
-  showToast(`${username || 'Stranger'} accepted! 🎉`, 'success', 4000);
+  showToast(`${username || 'Stranger'} accepted! ðŸŽ‰`, 'success', 4000);
+  emitLayoutBridgeEvent('friend_request_accepted', { username });
 });
 
-/* ── On skip/disconnect reset friend button state ── */
+socket.on('private_chat_started', ({ conversationId, roomId, messages }) => {
+  emitLayoutBridgeEvent('private_chat_started', {
+    conversationId,
+    roomId,
+    messages: Array.isArray(messages) ? messages : [],
+  });
+});
+
+/* â”€â”€ On skip/disconnect reset friend button state â”€â”€ */
 function resetFriendBtn() {
   DOM.friendReqBtn.disabled = false;
   DOM.friendReqBtn.style.display = 'none';
@@ -1271,3 +1391,4 @@ function resetFriendBtn() {
 
 </body>
 </html>
+

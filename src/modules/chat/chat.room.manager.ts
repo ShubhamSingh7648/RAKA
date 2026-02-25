@@ -4,11 +4,16 @@ export class RoomManager {
   private rooms: Map<string, Room> = new Map();
   private socketToRoom: Map<SocketId, string> = new Map();
 
-  createRoom(user1: SocketId, user2: SocketId): Room {
+  createRoom(
+    user1: SocketId,
+    user2: SocketId,
+    conversationId?: string
+  ): Room {
     const roomId = this.generateRoomId(user1, user2);
 
     const room: Room = {
       roomId,
+      conversationId,
       users: [user1, user2],
       createdAt: Date.now(),
     };

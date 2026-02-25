@@ -8,6 +8,17 @@ import {
 import { Friend } from "./friend.model";
 
 export class FriendService {
+  async areFriends(userId: string, otherUserId: string): Promise<boolean> {
+    const relation = await Friend.exists({
+      $or: [
+        { user: userId, friend: otherUserId },
+        { user: otherUserId, friend: userId },
+      ],
+    });
+
+    return Boolean(relation);
+  }
+
   async sendRequest(fromUserId: string, toUserId: string) {
     if (fromUserId === toUserId) {
       throw new AppError("Cannot send request to yourself", 400);

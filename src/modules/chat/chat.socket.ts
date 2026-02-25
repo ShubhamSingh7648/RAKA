@@ -17,6 +17,8 @@ import { verifyAccessToken } from "../../utils/jwt/jwt";
 import { User } from "../user/user.model";
 import { FriendService } from "../friend/friend.service";
 import { AppError } from "../../utils/errors/app.error";
+import { PrivateService } from "../private/private.service";
+import { Message } from "./models/message.model";
 
 function safeHandler(
   socket: Socket,
@@ -49,6 +51,7 @@ export const registerChatHandlers = (io: Server) => {
   const chatNamespace = io.of("/chat");
   const chatService = new ChatService(chatNamespace);
   const friendService = new FriendService();
+  const privateService = new PrivateService(friendService);
 
   const broadcastOnlineCount = () => {
     const payload: ServerToClientPayloads["online_count"] = {
@@ -90,36 +93,36 @@ export const registerChatHandlers = (io: Server) => {
 
     socket.on(
       "find_match",
-      safeHandler(socket, (payload: ClientToServerPayloads["find_match"]) => {
+      safeHandler(socket, async (payload: ClientToServerPayloads["find_match"]) => {
         if (typeof payload !== "undefined") {
           throw new AppError("find_match does not accept payload", 400);
         }
-        chatService.findMatch(socket);
+        await chatService.findMatch(socket);
       })
     );
 
     socket.on(
       "message",
-      safeHandler(socket, (payload: ClientToServerPayloads["message"]) => {
+      safeHandler(socket, async (payload: ClientToServerPayloads["message"]) => {
         const message = validateMessagePayload(payload);
-        chatService.handleMessage(socket, message);
+        await chatService.handleMessage(socket, message);
       })
     );
 
     socket.on(
       "skip",
-      safeHandler(socket, (payload: ClientToServerPayloads["skip"]) => {
+      safeHandler(socket, async (payload: ClientToServerPayloads["skip"]) => {
         if (typeof payload !== "undefined") {
           throw new AppError("skip does not accept payload", 400);
         }
-        chatService.skip(socket);
+        await chatService.skip(socket);
       })
     );
 
     socket.on(
       "disconnect",
-      safeHandler(socket, () => {
-        chatService.handleDisconnect(socket);
+      safeHandler(socket, async () => {
+        await chatService.handleDisconnect(socket);
         broadcastOnlineCount();
       })
     );
@@ -257,6 +260,41 @@ export const registerChatHandlers = (io: Server) => {
 
           const room = chatService.getRoomBySocket(socket.id);
           if (!room) return;
+
+          const partnerSocketId = chatService.getPartnerSocketId(socket.id);
+          if (!partnerSocketId) return;
+          const partnerSocket = chatNamespace.sockets.get(partnerSocketId);
+          if (!partnerSocket || partnerSocket.data.identity.type !== "user") return;
+
+          await chatService.closeRoomBySocket(socket.id);
+
+          const opened = await privateService.openPrivateChat(
+            identity.userId,
+            partnerSocket.data.identity.userId
+          );
+
+          socket.join(opened.roomId);
+          partnerSocket.join(opened.roomId);
+
+          const messages = await Message.find({ conversationId: opened.conversationId })
+            .sort({ _id: -1 })
+            .limit(30)
+            .lean();
+
+          const startedPayload: ServerToClientPayloads["private_chat_started"] = {
+            conversationId: opened.conversationId,
+            roomId: opened.roomId,
+            messages: messages
+              .map((message) => ({
+                id: message._id.toString(),
+                senderId: String(message.senderId),
+                content: message.content,
+                createdAt: new Date(message.createdAt).getTime(),
+              }))
+              .reverse(),
+          };
+
+          chatNamespace.to(opened.roomId).emit("private_chat_started", startedPayload);
 
           const acceptedPayload: ServerToClientPayloads["friend_request_accepted"] =
             {

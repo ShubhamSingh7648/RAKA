@@ -1,0 +1,81 @@
+export interface PrivateErrorPayload {
+  message: string;
+  statusCode: number;
+}
+
+export interface PrivateServerToClientPayloads {
+  private_chat_opened: {
+    conversationId: string;
+    roomId: string;
+  };
+  private_message: {
+    id: string;
+    conversationId: string;
+    senderId: string;
+    content: string;
+    createdAt: number;
+    readBy: string[];
+  };
+  private_messages_loaded: {
+    conversationId: string;
+    messages: Array<{
+      id: string;
+      senderId: string;
+      content: string;
+      createdAt: number;
+      readBy: string[];
+    }>;
+    nextCursor: string | null;
+  };
+  private_conversations_listed: {
+    conversations: Array<{
+      conversationId: string;
+      participantUserIds: string[];
+      participantProfiles: Array<{
+        userId: string;
+        username: string;
+      }>;
+      lastMessage: {
+        senderId: string;
+        content: string;
+        createdAt: number;
+      } | null;
+      updatedAt: number;
+      isActive: boolean;
+    }>;
+  };
+  private_message_read: {
+    conversationId: string;
+    messageId: string;
+    readerId: string;
+  };
+  delete_private_conversation_success: {
+    conversationId: string;
+  };
+  private_error: PrivateErrorPayload;
+}
+
+export interface PrivateClientToServerPayloads {
+  open_private_chat: {
+    friendUserId: string;
+  };
+  send_private_message: {
+    conversationId: string;
+    content: string;
+  };
+  load_private_messages: {
+    conversationId: string;
+    cursor?: string;
+    limit?: number;
+  };
+  list_private_conversations: {
+    limit?: number;
+  } | undefined;
+  mark_read: {
+    conversationId: string;
+    messageId: string;
+  };
+  delete_private_conversation: {
+    conversationId: string;
+  };
+}

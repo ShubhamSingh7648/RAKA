@@ -46,6 +46,16 @@ export interface ServerToClientPayloads {
     acceptedBy: string;
     username: string;
   };
+  private_chat_started: {
+    conversationId: string;
+    roomId: string;
+    messages: Array<{
+      id: string;
+      senderId: string;
+      content: string;
+      createdAt: number;
+    }>;
+  };
 }
 
 export interface ClientToServerPayloads {
