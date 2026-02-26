@@ -8,6 +8,10 @@ type ServerConfig = {
   MONGO_URL: string;
   NODE_ENV: string;
   CORS_ORIGINS: string[];
+  AUTH_LOGIN_WINDOW_MS: number;
+  AUTH_LOGIN_MAX_ATTEMPTS: number;
+  AUTH_REGISTER_WINDOW_MS: number;
+  AUTH_REGISTER_MAX_ATTEMPTS: number;
 };
 
 const getRequiredEnv = (name: string) => {
@@ -25,6 +29,19 @@ const parsePort = (rawPort: string | undefined) => {
     throw new Error("PORT must be a valid integer between 1 and 65535");
   }
   return port;
+};
+
+const parsePositiveInt = (
+  rawValue: string | undefined,
+  defaultValue: number,
+  envName: string
+) => {
+  if (!rawValue) return defaultValue;
+  const parsed = Number(rawValue);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${envName} must be a positive integer`);
+  }
+  return parsed;
 };
 
 const parseCsvList = (value: string | undefined) => {
@@ -46,4 +63,24 @@ export const serverConfig: ServerConfig = {
   MONGO_URL: getRequiredEnv("MONGO_URL"),
   NODE_ENV: process.env.NODE_ENV?.trim() || "development",
   CORS_ORIGINS: parseCsvList(process.env.CORS_ORIGINS),
+  AUTH_LOGIN_WINDOW_MS: parsePositiveInt(
+    process.env.AUTH_LOGIN_WINDOW_MS,
+    15 * 60 * 1000,
+    "AUTH_LOGIN_WINDOW_MS"
+  ),
+  AUTH_LOGIN_MAX_ATTEMPTS: parsePositiveInt(
+    process.env.AUTH_LOGIN_MAX_ATTEMPTS,
+    5,
+    "AUTH_LOGIN_MAX_ATTEMPTS"
+  ),
+  AUTH_REGISTER_WINDOW_MS: parsePositiveInt(
+    process.env.AUTH_REGISTER_WINDOW_MS,
+    60 * 60 * 1000,
+    "AUTH_REGISTER_WINDOW_MS"
+  ),
+  AUTH_REGISTER_MAX_ATTEMPTS: parsePositiveInt(
+    process.env.AUTH_REGISTER_MAX_ATTEMPTS,
+    3,
+    "AUTH_REGISTER_MAX_ATTEMPTS"
+  ),
 };

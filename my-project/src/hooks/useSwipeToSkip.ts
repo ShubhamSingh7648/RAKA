@@ -11,7 +11,7 @@ export function useSwipeToSkip({
   container,
   enabled,
   onSwipe,
-  threshold = 100,
+  threshold = 90,
 }: UseSwipeToSkipArgs) {
   useEffect(() => {
     if (!container || !enabled) return
@@ -29,9 +29,11 @@ export function useSwipeToSkip({
       const endX = event.changedTouches[0]?.clientX ?? startX
       const endY = event.changedTouches[0]?.clientY ?? startY
 
-      const deltaY = startY - endY
-      const deltaX = Math.abs(startX - endX)
-      if (deltaX < 30 && deltaY > threshold) {
+      // Right-to-left swipe only; ignore vertical scrolling gestures.
+      const deltaX = startX - endX
+      const deltaY = Math.abs(startY - endY)
+      const isHorizontalSwipe = Math.abs(deltaX) > deltaY * 1.2
+      if (isHorizontalSwipe && deltaX > threshold && deltaY < 60) {
         onSwipe()
       }
 

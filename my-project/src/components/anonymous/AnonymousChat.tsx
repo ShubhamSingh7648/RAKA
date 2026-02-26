@@ -86,6 +86,13 @@ export default function AnonymousChat() {
       )}
 
       <div className="min-h-0 flex-1 space-y-2 overflow-y-auto px-4 py-4">
+        {!chat.matched && (
+          <div className="mx-auto max-w-md rounded-xl border border-slate-800 bg-slate-900/70 px-4 py-3 text-center text-xs text-slate-400">
+            <div>Quick skip shortcuts</div>
+            <div className="mt-1 hidden sm:block">Desktop: press Shift + Enter to skip</div>
+            <div className="mt-1 sm:hidden">Mobile: swipe right to left to skip</div>
+          </div>
+        )}
         {chat.isPartnerTyping && (
           <div className="text-xs text-slate-400">Stranger is typing...</div>
         )}
@@ -169,6 +176,11 @@ export default function AnonymousChat() {
             className="max-h-32 min-h-6 flex-1 resize-none bg-transparent px-1 py-1 text-sm outline-none"
             onBlur={chat.emitStoppedTyping}
             onKeyDown={(e) => {
+              if (e.key === 'Enter' && e.shiftKey) {
+                e.preventDefault()
+                chat.skip()
+                return
+              }
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
                 send()

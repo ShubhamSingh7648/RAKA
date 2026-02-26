@@ -3,12 +3,13 @@ import rateLimit from "express-rate-limit";
 import { login, refreshToken, register } from "./auth.controller";
 import { validate } from "../../middleware/validate.middleware";
 import { loginSchema, registerSchema } from "./auth.validation";
+import { serverConfig } from "../../config";
 
 const router = Router();
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
+  windowMs: serverConfig.AUTH_LOGIN_WINDOW_MS,
+  max: serverConfig.AUTH_LOGIN_MAX_ATTEMPTS,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
@@ -18,8 +19,8 @@ const loginLimiter = rateLimit({
 });
 
 const registerLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 3,
+  windowMs: serverConfig.AUTH_REGISTER_WINDOW_MS,
+  max: serverConfig.AUTH_REGISTER_MAX_ATTEMPTS,
   standardHeaders: true,
   legacyHeaders: false,
   message: {
