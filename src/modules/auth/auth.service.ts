@@ -1,7 +1,11 @@
 import bcrypt from "bcrypt";
 import { User } from "../user/user.model";
 import { AppError } from "../../utils/errors/app.error";
-import { generateAccessToken } from "../../utils/jwt/jwt";
+import {
+  generateAccessToken,
+  generateRefreshToken,
+  verifyRefreshToken,
+} from "../../utils/jwt/jwt";
 
 export const registerUser = async (
   username: string,
@@ -24,6 +28,7 @@ export const registerUser = async (
   });
 
   const accessToken = generateAccessToken(user._id.toString(), "user");
+  const refreshToken = generateRefreshToken(user._id.toString());
 
   return {
     user: {
@@ -32,6 +37,7 @@ export const registerUser = async (
       email: user.email,
     },
     accessToken,
+    refreshToken,
   };
 };
 
@@ -55,6 +61,7 @@ export const loginUser = async (
     user._id.toString(),
     "user"
   );
+  const refreshToken = generateRefreshToken(user._id.toString());
 
   return {
     user: {
@@ -63,5 +70,25 @@ export const loginUser = async (
       email: user.email,
     },
     accessToken,
+    refreshToken,
   };
+};
+
+export const refreshAccessToken = async (token: string) => {
+  let decoded: { userId: string };
+  try {
+    decoded = verifyRefreshToken(token);
+  } catch {
+    throw new AppError("Invalid refresh token", 401);
+  }
+
+  const user = await User.findById(decoded.userId).select("_id");
+  if (!user) {
+    throw new AppError("Invalid refresh token", 401);
+  }
+
+  const accessToken = generateAccessToken(user._id.toString(), "user");
+  const refreshToken = generateRefreshToken(user._id.toString());
+
+  return { accessToken, refreshToken };
 };

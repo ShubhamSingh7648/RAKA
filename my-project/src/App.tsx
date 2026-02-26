@@ -1,7 +1,8 @@
 import type { ReactElement } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/AppLayout'
-import ChatWindow from './components/ChatWindow'
+import AnonymousChat from './components/anonymous/AnonymousChat'
+import FriendsList from './components/FriendsList'
 import PrivateChat from './components/PrivateChat'
 import { useAuth } from './context/AuthContext'
 
@@ -34,8 +35,20 @@ function ChatNeutralState() {
   )
 }
 
+function FullScreenLoader() {
+  return (
+    <div className="flex h-dvh items-center justify-center bg-slate-950 text-slate-300">
+      <div className="text-sm">Loading...</div>
+    </div>
+  )
+}
+
 function App() {
-  const { isAuthenticated } = useAuth()
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <FullScreenLoader />
+  }
 
   return (
     <BrowserRouter>
@@ -44,7 +57,7 @@ function App() {
 
         <Route path="/chat" element={<AppLayout />}>
           <Route index element={<ChatNeutralState />} />
-          <Route path="random" element={<ChatWindow />} />
+          <Route path="random" element={<AnonymousChat />} />
           <Route
             path="private"
             element={
@@ -58,6 +71,14 @@ function App() {
             element={
               <ProtectedPrivateRoute authenticated={isAuthenticated}>
                 <PrivateChat />
+              </ProtectedPrivateRoute>
+            }
+          />
+          <Route
+            path="friends"
+            element={
+              <ProtectedPrivateRoute authenticated={isAuthenticated}>
+                <FriendsList />
               </ProtectedPrivateRoute>
             }
           />

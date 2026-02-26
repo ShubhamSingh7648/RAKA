@@ -31,4 +31,9 @@ export type SocketIdentity =
       type: "user";
       guestId: string;
       userId: string;
+      username: string;
     };
+
+export interface SocketData {
+  identity: SocketIdentity;
+}

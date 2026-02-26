@@ -111,7 +111,7 @@ export const registerChatHandlers = (io: Server) => {
     socket.on(
       "find_match",
       safeHandler(socket, async (payload: ClientToServerPayloads["find_match"]) => {
-        if (typeof payload !== "undefined") {
+        if (typeof payload !== "undefined" && typeof payload !== "function") {
           throw new AppError("find_match does not accept payload", 400);
         }
         await chatService.findMatch(socket);
@@ -123,6 +123,26 @@ export const registerChatHandlers = (io: Server) => {
       safeHandler(socket, async (payload: ClientToServerPayloads["message"]) => {
         const message = validateMessagePayload(payload);
         await chatService.handleMessage(socket, message);
+      })
+    );
+
+    socket.on(
+      "typing",
+      safeHandler(socket, async (_payload: ClientToServerPayloads["typing"]) => {
+        const room = chatService.getRoomBySocket(socket.id);
+        if (!room) return;
+        const typingPayload: ServerToClientPayloads["typing"] = {};
+        socket.to(room.roomId).emit("typing", typingPayload);
+      })
+    );
+
+    socket.on(
+      "stopped_typing",
+      safeHandler(socket, async (_payload: ClientToServerPayloads["stopped_typing"]) => {
+        const room = chatService.getRoomBySocket(socket.id);
+        if (!room) return;
+        const typingPayload: ServerToClientPayloads["stopped_typing"] = {};
+        socket.to(room.roomId).emit("stopped_typing", typingPayload);
       })
     );
 
@@ -277,6 +297,7 @@ export const registerChatHandlers = (io: Server) => {
 
           const room = chatService.getRoomBySocket(socket.id);
           if (!room) return;
+          const savedRoomId = room.roomId;
 
           const partnerSocketId = chatService.getPartnerSocketId(socket.id);
           if (!partnerSocketId) return;
@@ -321,8 +342,11 @@ export const registerChatHandlers = (io: Server) => {
             };
 
           chatNamespace
-            .to(room.roomId)
+            .to(savedRoomId)
             .emit("friend_request_accepted", acceptedPayload);
+
+          socket.leave(savedRoomId);
+          partnerSocket.leave(savedRoomId);
 
           logger.info(
             `Friend request ${requestId} accepted by ${identity.username}`

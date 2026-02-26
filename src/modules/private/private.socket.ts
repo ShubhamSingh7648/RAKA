@@ -53,6 +53,81 @@ export const registerPrivateHandlers = (io: Server) => {
   const friendService = new FriendService();
   const privateService = new PrivateService(friendService);
   const blockService = new BlockService();
+  const roomPrefix = "conversation:";
+
+  const emitPresence = (
+    roomId: string,
+    conversationId: string,
+    userId: string,
+    isOnline: boolean
+  ) => {
+    const eventPayload: PrivateServerToClientPayloads["private_presence"] = {
+      conversationId,
+      userId,
+      isOnline,
+    };
+    privateNamespace.to(roomId).emit("private_presence", eventPayload);
+  };
+
+  const hasUserInRoom = (
+    roomId: string,
+    userId: string,
+    excludeSocketId?: string
+  ) => {
+    const roomSockets = privateNamespace.adapter.rooms.get(roomId);
+    if (!roomSockets) return false;
+
+    for (const socketId of roomSockets) {
+      if (excludeSocketId && socketId === excludeSocketId) continue;
+      const roomSocket = privateNamespace.sockets.get(socketId);
+      const identity = roomSocket?.data?.identity;
+      if (identity?.type === "user" && identity.userId === userId) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const joinConversationRoom = (
+    socket: Socket,
+    conversationId: string,
+    userId: string
+  ) => {
+    const roomId = privateService.getRoomId(conversationId);
+    const alreadyPresent = hasUserInRoom(roomId, userId);
+    socket.join(roomId);
+
+    const roomSockets = privateNamespace.adapter.rooms.get(roomId);
+    const otherUserIds = new Set<string>();
+    if (roomSockets) {
+      for (const socketId of roomSockets) {
+        const roomSocket = privateNamespace.sockets.get(socketId);
+        const identity = roomSocket?.data?.identity;
+        if (
+          identity?.type === "user" &&
+          identity.userId &&
+          identity.userId !== userId
+        ) {
+          otherUserIds.add(identity.userId);
+        }
+      }
+    }
+
+    for (const otherUserId of otherUserIds) {
+      const payload: PrivateServerToClientPayloads["private_presence"] = {
+        conversationId,
+        userId: otherUserId,
+        isOnline: true,
+      };
+      socket.emit("private_presence", payload);
+    }
+
+    if (!alreadyPresent) {
+      emitPresence(roomId, conversationId, userId, true);
+    }
+
+    return roomId;
+  };
 
   privateNamespace.use(async (socket, next) => {
     const handshakeToken = socket.handshake.auth?.token;
@@ -82,6 +157,21 @@ export const registerPrivateHandlers = (io: Server) => {
   });
 
   privateNamespace.on("connection", async (socket: Socket) => {
+    socket.on("disconnecting", () => {
+      const identity = socket.data.identity;
+      if (identity?.type !== "user") return;
+      const userId = identity.userId;
+
+      for (const roomId of socket.rooms) {
+        if (roomId === socket.id || !roomId.startsWith(roomPrefix)) continue;
+        const conversationId = roomId.slice(roomPrefix.length);
+        const userStillPresent = hasUserInRoom(roomId, userId, socket.id);
+        if (!userStillPresent) {
+          emitPresence(roomId, conversationId, userId, false);
+        }
+      }
+    });
+
     socket.on(
       "open_private_chat",
       safeHandler(
@@ -95,7 +185,7 @@ export const registerPrivateHandlers = (io: Server) => {
           }
 
           const opened = await privateService.openPrivateChat(userId, friendUserId);
-          socket.join(opened.roomId);
+          joinConversationRoom(socket, opened.conversationId, userId);
 
           const eventPayload: PrivateServerToClientPayloads["private_chat_opened"] = {
             conversationId: opened.conversationId,
@@ -124,8 +214,7 @@ export const registerPrivateHandlers = (io: Server) => {
             conversationId,
             content
           );
-          const roomId = privateService.getRoomId(conversationId);
-          socket.join(roomId);
+          const roomId = joinConversationRoom(socket, conversationId, userId);
 
           const roomSockets = privateNamespace.adapter.rooms.get(roomId);
           const recipientIds = new Set<string>();
@@ -182,6 +271,7 @@ export const registerPrivateHandlers = (io: Server) => {
             cursor: payload?.cursor,
             limit: payload?.limit,
           });
+          joinConversationRoom(socket, conversationId, userId);
 
           const eventPayload: PrivateServerToClientPayloads["private_messages_loaded"] =
             {
@@ -240,8 +330,7 @@ export const registerPrivateHandlers = (io: Server) => {
             messageId,
           });
 
-          const roomId = privateService.getRoomId(conversationId);
-          socket.join(roomId);
+          const roomId = joinConversationRoom(socket, conversationId, userId);
 
           const eventPayload: PrivateServerToClientPayloads["private_message_read"] =
             {
@@ -251,6 +340,52 @@ export const registerPrivateHandlers = (io: Server) => {
             };
 
           privateNamespace.to(roomId).emit("private_message_read", eventPayload);
+        }
+      )
+    );
+
+    socket.on(
+      "typing",
+      safeHandler(
+        socket,
+        async (payload: PrivateClientToServerPayloads["typing"]) => {
+          const userId = requireUserId(socket);
+          const conversationId = payload?.conversationId?.trim();
+
+          if (!conversationId) {
+            throw new AppError("conversationId is required", 400);
+          }
+
+          const roomId = joinConversationRoom(socket, conversationId, userId);
+
+          const eventPayload: PrivateServerToClientPayloads["typing"] = {
+            conversationId,
+            userId,
+          };
+          socket.to(roomId).emit("typing", eventPayload);
+        }
+      )
+    );
+
+    socket.on(
+      "stopped_typing",
+      safeHandler(
+        socket,
+        async (payload: PrivateClientToServerPayloads["stopped_typing"]) => {
+          const userId = requireUserId(socket);
+          const conversationId = payload?.conversationId?.trim();
+
+          if (!conversationId) {
+            throw new AppError("conversationId is required", 400);
+          }
+
+          const roomId = joinConversationRoom(socket, conversationId, userId);
+
+          const eventPayload: PrivateServerToClientPayloads["stopped_typing"] = {
+            conversationId,
+            userId,
+          };
+          socket.to(roomId).emit("stopped_typing", eventPayload);
         }
       )
     );

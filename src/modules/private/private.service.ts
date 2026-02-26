@@ -306,6 +306,21 @@ export class PrivateService {
     const usernameById = new Map(
       users.map((user) => [user._id.toString(), user.username])
     );
+    const unreadCounts = await Promise.all(
+      conversations.map((conversation) =>
+        Message.countDocuments({
+          conversationId: conversation._id,
+          senderId: { $ne: userId },
+          readBy: { $nin: [userId] },
+        })
+      )
+    );
+    const unreadCountByConversationId = new Map<string, number>(
+      conversations.map((conversation, index) => [
+        conversation._id.toString(),
+        unreadCounts[index] ?? 0,
+      ])
+    );
 
     return {
       conversations: conversations.map((conversation) => {
@@ -333,6 +348,7 @@ export class PrivateService {
             : null,
           updatedAt: new Date(conversation.updatedAt).getTime(),
           isActive: conversation.isActive,
+          unreadCount: unreadCountByConversationId.get(conversationId) ?? 0,
         };
       }),
     };

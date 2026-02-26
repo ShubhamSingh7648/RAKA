@@ -19,6 +19,7 @@ type LeftSidebarProps = {
   privateConversations?: PrivateConversationItem[]
   selectedConversationId?: string | null
   selectedAnonymous?: boolean
+  selectedFriends?: boolean
   onNavigate?: (path: string) => void
   onDeleteConversation?: (conversationId: string) => void
   onClose?: () => void
@@ -38,6 +39,7 @@ export default function LeftSidebar({
   privateConversations = [],
   selectedConversationId = null,
   selectedAnonymous = false,
+  selectedFriends = false,
   onNavigate,
   onDeleteConversation,
   onClose,
@@ -55,6 +57,10 @@ export default function LeftSidebar({
 
   const handlePrivateClick = (conversationId: string) => {
     onNavigate?.(`/chat/private/${conversationId}`)
+  }
+
+  const handleFriendsClick = () => {
+    onNavigate?.('/chat/friends')
   }
 
   return (
@@ -97,6 +103,20 @@ export default function LeftSidebar({
         <div className="mb-1 px-2 text-[11px] font-medium uppercase tracking-wide text-slate-500">
           Private
         </div>
+
+        <button
+          type="button"
+          onClick={handleFriendsClick}
+          className={[
+            'mb-3 w-full rounded-xl border px-3 py-2 text-left transition',
+            selectedFriends
+              ? 'border-violet-500/40 bg-slate-800 shadow-[0_0_0_1px_rgba(124,106,255,0.2)]'
+              : 'border-slate-800 bg-slate-900 hover:border-violet-500/20 hover:bg-slate-800',
+          ].join(' ')}
+        >
+          <div className="text-sm font-medium text-slate-100">Friends</div>
+          <div className="mt-1 text-xs text-slate-400">Open friend list</div>
+        </button>
 
         <div className="space-y-1">
           {privateConversations.map((chat) => {

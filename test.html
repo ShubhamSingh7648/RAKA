@@ -1211,12 +1211,18 @@ socket.on('friend_request_message', (data) => {
   if (isOwn) {
     msg.textContent = 'You sent a friend request.';
   } else {
-    msg.innerHTML = `
-      <b>${data?.from?.username || 'Stranger'}</b> sent a friend request.
-      <button onclick="acceptRequest('${data?.requestId || ''}', this)">
-        Accept
-      </button>
-    `;
+    const sender = document.createElement('b');
+    sender.textContent = data?.from?.username || 'Stranger';
+    msg.appendChild(sender);
+    msg.appendChild(document.createTextNode(' sent a friend request. '));
+
+    const acceptBtn = document.createElement('button');
+    acceptBtn.textContent = 'Accept';
+    acceptBtn.dataset.requestId = data?.requestId || '';
+    acceptBtn.addEventListener('click', () => {
+      acceptRequest(acceptBtn.dataset.requestId || '', acceptBtn);
+    });
+    msg.appendChild(acceptBtn);
   }
 
   DOM.messagesWrap.appendChild(msg);
@@ -1278,3 +1284,4 @@ function resetFriendBtn() {
 
 </body>
 </html>
+

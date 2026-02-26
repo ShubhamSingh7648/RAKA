@@ -11,6 +11,33 @@ import { BlockService } from "../block/block.service";
 export class FriendService {
   private blockService = new BlockService();
 
+  async listFriends(userId: string, limit?: number) {
+    const safeLimit = Math.min(Math.max(limit ?? 50, 1), 100);
+
+    const rows = await Friend.find({ user: userId })
+      .sort({ createdAt: -1 })
+      .limit(safeLimit)
+      .populate("friend", "_id username")
+      .lean();
+
+    return {
+      friends: rows
+        .map((row) => {
+          const friend =
+            row.friend && typeof row.friend === "object" ? row.friend : null;
+          if (!friend || !("_id" in friend)) return null;
+
+          return {
+            userId: String(friend._id),
+            username:
+              "username" in friend ? String(friend.username) : "Unknown",
+            friendsSince: new Date(row.createdAt).getTime(),
+          };
+        })
+        .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry)),
+    };
+  }
+
   async areFriends(userId: string, otherUserId: string): Promise<boolean> {
     const relation = await Friend.exists({
       $or: [

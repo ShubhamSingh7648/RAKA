@@ -32,9 +32,10 @@ export default function RightSidebar({
 }: RightSidebarProps) {
   const { user } = useAuth()
   const ownProfile: ProfileData = {
+    displayPictureUrl: user?.displayPicture || '',
     name: user?.username || 'Guest',
     status: user?.email || '',
-    bio: '',
+    bio: user?.bio || '',
     gender: '',
   }
   const showingFriend = isPrivateView && Boolean(friendProfile)

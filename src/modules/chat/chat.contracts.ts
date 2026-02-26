@@ -97,6 +97,8 @@ export interface ServerToClientPayloads {
       createdAt: number;
     }>;
   };
+  typing: Record<string, never>;
+  stopped_typing: Record<string, never>;
 }
 
 export interface ClientToServerPayloads {
@@ -112,4 +114,6 @@ export interface ClientToServerPayloads {
   list_blocked_users: { limit?: number } | undefined;
   block_user: string;
   unblock_user: string;
+  typing: undefined;
+  stopped_typing: undefined;
 }

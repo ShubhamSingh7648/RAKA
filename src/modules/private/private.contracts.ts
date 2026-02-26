@@ -65,6 +65,19 @@ export interface PrivateServerToClientPayloads {
   user_unblocked: {
     unblockedUserId: string;
   };
+  typing: {
+    conversationId: string;
+    userId: string;
+  };
+  stopped_typing: {
+    conversationId: string;
+    userId: string;
+  };
+  private_presence: {
+    conversationId: string;
+    userId: string;
+    isOnline: boolean;
+  };
   private_error: PrivateErrorPayload;
 }
 
@@ -99,5 +112,11 @@ export interface PrivateClientToServerPayloads {
   };
   unblock_user: {
     userId: string;
+  };
+  typing: {
+    conversationId: string;
+  };
+  stopped_typing: {
+    conversationId: string;
   };
 }

@@ -2,6 +2,7 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
 
 import { serverConfig } from "./config";
@@ -60,6 +61,7 @@ app.use(
 );
 
 app.use(express.json());
+app.use(cookieParser());
 app.use(correlationIdMiddleware);
 
 app.use("/api/v1", v1Router);

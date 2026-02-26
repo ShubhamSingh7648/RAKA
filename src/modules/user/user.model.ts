@@ -4,6 +4,8 @@ export interface IUser extends Document {
   username: string;
   email: string;
   passwordHash: string;
+  bio?: string;
+  displayPicture?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -15,6 +17,7 @@ const userSchema = new Schema<IUser>(
       required: true,
       unique: true,
       trim: true,
+      match: [/^[a-zA-Z0-9_.-]+$/, "Invalid username format"],
     },
     email: {
       type: String,
@@ -26,6 +29,16 @@ const userSchema = new Schema<IUser>(
     passwordHash: {
       type: String,
       required: true,
+    },
+    bio: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    displayPicture: {
+      type: String,
+      trim: true,
+      default: "",
     },
   },
   {
