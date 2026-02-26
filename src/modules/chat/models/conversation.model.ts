@@ -6,6 +6,7 @@ export interface IConversation extends Document {
   participants: [string, string];
   participantsKey?: string;
   type: ConversationType;
+  hiddenBy: string[];
   lastMessage?: {
     senderId: string;
     content: string;
@@ -39,6 +40,11 @@ const conversationSchema = new Schema<IConversation>(
       type: String,
       enum: ["random", "private"],
       required: true,
+    },
+    hiddenBy: {
+      type: [String],
+      default: [],
+      index: true,
     },
     lastMessage: {
       senderId: {

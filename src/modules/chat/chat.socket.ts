@@ -10,7 +10,9 @@ import { buildSocketError, mapAppErrorToSocketError } from "./chat.error";
 import {
   validateAcceptRequestPayload,
   validateMessagePayload,
+  validateRequestIdPayload,
   validateUpgradeIdentityPayload,
+  validateUserIdPayload,
 } from "./chat.socket.validation";
 import logger from "../../config/logger.config";
 import { verifyAccessToken } from "../../utils/jwt/jwt";
@@ -19,6 +21,7 @@ import { FriendService } from "../friend/friend.service";
 import { AppError } from "../../utils/errors/app.error";
 import { PrivateService } from "../private/private.service";
 import { Message } from "./models/message.model";
+import { BlockService } from "../block/block.service";
 
 function safeHandler(
   socket: Socket,
@@ -49,9 +52,23 @@ function safeHandler(
 
 export const registerChatHandlers = (io: Server) => {
   const chatNamespace = io.of("/chat");
-  const chatService = new ChatService(chatNamespace);
+  const blockService = new BlockService();
+  const chatService = new ChatService(chatNamespace, blockService);
   const friendService = new FriendService();
   const privateService = new PrivateService(friendService);
+
+  const emitToUserInChatNamespace = <T extends keyof ServerToClientPayloads>(
+    userId: string,
+    eventName: T,
+    payload: ServerToClientPayloads[T]
+  ) => {
+    for (const namespaceSocket of chatNamespace.sockets.values()) {
+      const identity = namespaceSocket.data.identity;
+      if (identity?.type === "user" && identity.userId === userId) {
+        namespaceSocket.emit(eventName, payload);
+      }
+    }
+  };
 
   const broadcastOnlineCount = () => {
     const payload: ServerToClientPayloads["online_count"] = {
@@ -314,6 +331,181 @@ export const registerChatHandlers = (io: Server) => {
         {
           errorEvent: "friend_error",
           fallbackMessage: "Unable to accept friend request",
+        }
+      )
+    );
+
+    socket.on(
+      "list_friend_requests",
+      safeHandler(
+        socket,
+        async (payload: ClientToServerPayloads["list_friend_requests"]) => {
+          const identity = socket.data.identity;
+          if (identity.type !== "user") {
+            const errorPayload: ServerToClientPayloads["friend_error"] =
+              buildSocketError(SocketErrorCodes.UNAUTHORIZED, "Login required", 401);
+            socket.emit("friend_error", errorPayload);
+            return;
+          }
+
+          const listed = await friendService.listPendingRequests(
+            identity.userId,
+            payload?.limit
+          );
+          const listedPayload: ServerToClientPayloads["friend_requests_listed"] = {
+            incoming: listed.incoming,
+            outgoing: listed.outgoing,
+          };
+          socket.emit("friend_requests_listed", listedPayload);
+        },
+        {
+          errorEvent: "friend_error",
+          fallbackMessage: "Unable to list friend requests",
+        }
+      )
+    );
+
+    socket.on(
+      "cancel_friend_request",
+      safeHandler(
+        socket,
+        async (payload: ClientToServerPayloads["cancel_friend_request"]) => {
+          const identity = socket.data.identity;
+          if (identity.type !== "user") {
+            const errorPayload: ServerToClientPayloads["friend_error"] =
+              buildSocketError(SocketErrorCodes.UNAUTHORIZED, "Login required", 401);
+            socket.emit("friend_error", errorPayload);
+            return;
+          }
+
+          const requestId = validateRequestIdPayload(payload);
+          const cancelled = await friendService.cancelRequest(requestId, identity.userId);
+          const cancelledPayload: ServerToClientPayloads["friend_request_cancelled"] = {
+            requestId: cancelled.requestId,
+            cancelledByUserId: identity.userId,
+          };
+
+          emitToUserInChatNamespace(cancelled.fromUserId, "friend_request_cancelled", cancelledPayload);
+          emitToUserInChatNamespace(cancelled.toUserId, "friend_request_cancelled", cancelledPayload);
+        },
+        {
+          errorEvent: "friend_error",
+          fallbackMessage: "Unable to cancel friend request",
+        }
+      )
+    );
+
+    socket.on(
+      "reject_friend_request",
+      safeHandler(
+        socket,
+        async (payload: ClientToServerPayloads["reject_friend_request"]) => {
+          const identity = socket.data.identity;
+          if (identity.type !== "user") {
+            const errorPayload: ServerToClientPayloads["friend_error"] =
+              buildSocketError(SocketErrorCodes.UNAUTHORIZED, "Login required", 401);
+            socket.emit("friend_error", errorPayload);
+            return;
+          }
+
+          const requestId = validateRequestIdPayload(payload);
+          const rejected = await friendService.rejectRequest(requestId, identity.userId);
+          const rejectedPayload: ServerToClientPayloads["friend_request_rejected"] = {
+            requestId: rejected.requestId,
+            rejectedByUserId: identity.userId,
+          };
+
+          emitToUserInChatNamespace(rejected.fromUserId, "friend_request_rejected", rejectedPayload);
+          emitToUserInChatNamespace(rejected.toUserId, "friend_request_rejected", rejectedPayload);
+        },
+        {
+          errorEvent: "friend_error",
+          fallbackMessage: "Unable to reject friend request",
+        }
+      )
+    );
+
+    socket.on(
+      "list_blocked_users",
+      safeHandler(
+        socket,
+        async (payload: ClientToServerPayloads["list_blocked_users"]) => {
+          const identity = socket.data.identity;
+          if (identity.type !== "user") {
+            const errorPayload: ServerToClientPayloads["friend_error"] =
+              buildSocketError(SocketErrorCodes.UNAUTHORIZED, "Login required", 401);
+            socket.emit("friend_error", errorPayload);
+            return;
+          }
+
+          const listed = await blockService.listBlockedUsers(
+            identity.userId,
+            payload?.limit
+          );
+          const eventPayload: ServerToClientPayloads["blocked_users_listed"] = {
+            users: listed.users,
+          };
+          socket.emit("blocked_users_listed", eventPayload);
+        },
+        {
+          errorEvent: "friend_error",
+          fallbackMessage: "Unable to list blocked users",
+        }
+      )
+    );
+
+    socket.on(
+      "block_user",
+      safeHandler(
+        socket,
+        async (payload: ClientToServerPayloads["block_user"]) => {
+          const identity = socket.data.identity;
+          if (identity.type !== "user") {
+            const errorPayload: ServerToClientPayloads["friend_error"] =
+              buildSocketError(SocketErrorCodes.UNAUTHORIZED, "Login required", 401);
+            socket.emit("friend_error", errorPayload);
+            return;
+          }
+
+          const blockedUserId = validateUserIdPayload(payload);
+          await blockService.blockUser(identity.userId, blockedUserId);
+
+          const eventPayload: ServerToClientPayloads["user_blocked"] = {
+            blockedUserId,
+          };
+          socket.emit("user_blocked", eventPayload);
+        },
+        {
+          errorEvent: "friend_error",
+          fallbackMessage: "Unable to block user",
+        }
+      )
+    );
+
+    socket.on(
+      "unblock_user",
+      safeHandler(
+        socket,
+        async (payload: ClientToServerPayloads["unblock_user"]) => {
+          const identity = socket.data.identity;
+          if (identity.type !== "user") {
+            const errorPayload: ServerToClientPayloads["friend_error"] =
+              buildSocketError(SocketErrorCodes.UNAUTHORIZED, "Login required", 401);
+            socket.emit("friend_error", errorPayload);
+            return;
+          }
+
+          const blockedUserId = validateUserIdPayload(payload);
+          await blockService.unblockUser(identity.userId, blockedUserId);
+
+          const eventPayload: ServerToClientPayloads["user_unblocked"] = {
+            unblockedUserId: blockedUserId,
+          };
+          socket.emit("user_unblocked", eventPayload);
+        },
+        {
+          errorEvent: "friend_error",
+          fallbackMessage: "Unable to unblock user",
         }
       )
     );

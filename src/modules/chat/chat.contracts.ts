@@ -46,6 +46,47 @@ export interface ServerToClientPayloads {
     acceptedBy: string;
     username: string;
   };
+  friend_requests_listed: {
+    incoming: Array<{
+      requestId: string;
+      fromUserId: string;
+      toUserId: string;
+      fromUsername: string;
+      toUsername: string;
+      createdAt: number;
+      expiresAt: number | null;
+    }>;
+    outgoing: Array<{
+      requestId: string;
+      fromUserId: string;
+      toUserId: string;
+      fromUsername: string;
+      toUsername: string;
+      createdAt: number;
+      expiresAt: number | null;
+    }>;
+  };
+  friend_request_cancelled: {
+    requestId: string;
+    cancelledByUserId: string;
+  };
+  friend_request_rejected: {
+    requestId: string;
+    rejectedByUserId: string;
+  };
+  blocked_users_listed: {
+    users: Array<{
+      userId: string;
+      username: string;
+      blockedAt: number;
+    }>;
+  };
+  user_blocked: {
+    blockedUserId: string;
+  };
+  user_unblocked: {
+    unblockedUserId: string;
+  };
   private_chat_started: {
     conversationId: string;
     roomId: string;
@@ -65,4 +106,10 @@ export interface ClientToServerPayloads {
   upgrade_identity: string;
   send_friend_request: undefined;
   accept_friend_request: string;
+  list_friend_requests: { limit?: number } | undefined;
+  cancel_friend_request: string;
+  reject_friend_request: string;
+  list_blocked_users: { limit?: number } | undefined;
+  block_user: string;
+  unblock_user: string;
 }

@@ -37,3 +37,9 @@ export const validateMessagePayload = (payload: unknown) =>
 
 export const validateAcceptRequestPayload = (payload: unknown) =>
   parseWithAppError(objectIdSchema, payload, "Invalid request id");
+
+export const validateRequestIdPayload = (payload: unknown) =>
+  parseWithAppError(objectIdSchema, payload, "Invalid request id");
+
+export const validateUserIdPayload = (payload: unknown) =>
+  parseWithAppError(objectIdSchema, payload, "Invalid user id");

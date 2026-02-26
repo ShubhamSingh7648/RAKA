@@ -6,8 +6,11 @@ import {
   IFriendRequest,
 } from "./friendRequest.model";
 import { Friend } from "./friend.model";
+import { BlockService } from "../block/block.service";
 
 export class FriendService {
+  private blockService = new BlockService();
+
   async areFriends(userId: string, otherUserId: string): Promise<boolean> {
     const relation = await Friend.exists({
       $or: [
@@ -22,6 +25,19 @@ export class FriendService {
   async sendRequest(fromUserId: string, toUserId: string) {
     if (fromUserId === toUserId) {
       throw new AppError("Cannot send request to yourself", 400);
+    }
+
+    const isBlocked = await this.blockService.isBlockedEitherDirection(
+      fromUserId,
+      toUserId
+    );
+    if (isBlocked) {
+      throw new AppError("Cannot send request while one user is blocked", 403);
+    }
+
+    const alreadyFriends = await this.areFriends(fromUserId, toUserId);
+    if (alreadyFriends) {
+      throw new AppError("Users are already friends", 409);
     }
 
     const participantsKey = buildParticipantsKey(fromUserId, toUserId);
@@ -52,6 +68,118 @@ export class FriendService {
       }
       throw err;
     }
+  }
+
+  async listPendingRequests(userId: string, limit?: number) {
+    const safeLimit = Math.min(Math.max(limit ?? 50, 1), 100);
+
+    const pending = await FriendRequest.find({
+      status: "pending",
+      $or: [{ fromUser: userId }, { toUser: userId }],
+    })
+      .sort({ createdAt: -1 })
+      .limit(safeLimit)
+      .populate("fromUser", "username")
+      .populate("toUser", "username")
+      .lean();
+
+    const mapped = pending.map((request) => {
+      const fromUserId = request.fromUser?._id?.toString() ?? String(request.fromUser);
+      const toUserId = request.toUser?._id?.toString() ?? String(request.toUser);
+      const fromUsername =
+        request.fromUser &&
+        typeof request.fromUser === "object" &&
+        "username" in request.fromUser
+          ? String(request.fromUser.username)
+          : "Unknown";
+      const toUsername =
+        request.toUser &&
+        typeof request.toUser === "object" &&
+        "username" in request.toUser
+          ? String(request.toUser.username)
+          : "Unknown";
+
+      return {
+        requestId: request._id.toString(),
+        fromUserId,
+        toUserId,
+        fromUsername,
+        toUsername,
+        createdAt: new Date(request.createdAt).getTime(),
+        expiresAt: request.expiresAt ? new Date(request.expiresAt).getTime() : null,
+      };
+    });
+
+    return {
+      incoming: mapped.filter((request) => request.toUserId === userId),
+      outgoing: mapped.filter((request) => request.fromUserId === userId),
+    };
+  }
+
+  async cancelRequest(requestId: string, userId: string) {
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      throw new AppError("Invalid request id", 400);
+    }
+
+    const cancelled = await FriendRequest.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(requestId),
+        fromUser: userId,
+        status: "pending",
+      },
+      {
+        $set: {
+          status: "cancelled",
+        },
+        $unset: {
+          expiresAt: 1,
+        },
+      },
+      { new: true }
+    ).lean();
+
+    if (!cancelled) {
+      throw new AppError("Pending request not found", 404);
+    }
+
+    return {
+      requestId: cancelled._id.toString(),
+      fromUserId: String(cancelled.fromUser),
+      toUserId: String(cancelled.toUser),
+    };
+  }
+
+  async rejectRequest(requestId: string, userId: string) {
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      throw new AppError("Invalid request id", 400);
+    }
+
+    const rejected = await FriendRequest.findOneAndUpdate(
+      {
+        _id: new mongoose.Types.ObjectId(requestId),
+        toUser: userId,
+        status: "pending",
+      },
+      {
+        $set: {
+          status: "rejected",
+        },
+        $unset: {
+          expiresAt: 1,
+        },
+      },
+      { new: true }
+    ).lean();
+
+    if (!rejected) {
+      throw new AppError("Pending request not found", 404);
+    }
+
+    return {
+      requestId: rejected._id.toString(),
+      fromUserId: String(rejected.fromUser),
+      toUserId: String(rejected.toUser),
+    };
   }
 
   async acceptRequest(requestId: string, userId: string) {
@@ -96,6 +224,14 @@ export class FriendService {
 
     if (request.toUser.toString() !== userId) {
       throw new AppError("Not authorized to accept this request", 403);
+    }
+
+    const isBlocked = await this.blockService.isBlockedEitherDirection(
+      request.fromUser.toString(),
+      request.toUser.toString()
+    );
+    if (isBlocked) {
+      throw new AppError("Cannot accept request while one user is blocked", 403);
     }
 
     if (request.status !== "pending") {

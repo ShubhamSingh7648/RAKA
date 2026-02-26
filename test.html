@@ -335,7 +335,7 @@
     /* ─── Toast ──────────────────────────────────────────────────── */
     #toast-container {
       position: fixed;
-      top: 70px;
+      top: max(16px, calc(env(safe-area-inset-top) + 96px));
       right: 20px;
       z-index: 999;
       display: flex;
@@ -544,6 +544,13 @@
       .msg-row { max-width: 85%; }
       #skip-hint { display: none; }
       #logo { font-size: 18px; }
+      #toast-container {
+        top: calc(env(safe-area-inset-top) + 84px);
+        right: 14px;
+      }
+      .toast {
+        max-width: min(280px, calc(100vw - 28px));
+      }
     }
   </style>
 </head>

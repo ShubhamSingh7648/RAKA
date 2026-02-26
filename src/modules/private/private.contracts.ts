@@ -52,6 +52,19 @@ export interface PrivateServerToClientPayloads {
   delete_private_conversation_success: {
     conversationId: string;
   };
+  blocked_users_listed: {
+    users: Array<{
+      userId: string;
+      username: string;
+      blockedAt: number;
+    }>;
+  };
+  user_blocked: {
+    blockedUserId: string;
+  };
+  user_unblocked: {
+    unblockedUserId: string;
+  };
   private_error: PrivateErrorPayload;
 }
 
@@ -77,5 +90,14 @@ export interface PrivateClientToServerPayloads {
   };
   delete_private_conversation: {
     conversationId: string;
+  };
+  list_blocked_users: {
+    limit?: number;
+  } | undefined;
+  block_user: {
+    userId: string;
+  };
+  unblock_user: {
+    userId: string;
   };
 }

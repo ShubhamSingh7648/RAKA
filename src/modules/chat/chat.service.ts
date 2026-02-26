@@ -11,6 +11,7 @@ import { Message } from "./models/message.model";
 
 import { chatConfig } from "../../config/chat.config";
 import logger from "../../config/logger.config";
+import { BlockService } from "../block/block.service";
 
 
 export class ChatService {
@@ -22,7 +23,7 @@ export class ChatService {
   private skipPairs: Map<string, number> = new Map();
 
 
-  constructor(private io: Namespace) {
+  constructor(private io: Namespace, private blockService: BlockService) {
     setInterval(() => {
       logger.info(
         `Chat health status | queue=${this.queue.size()} | rooms=${this.roomManager.activeRoomCount()} | sockets=${this.io.sockets.size}`
@@ -68,6 +69,14 @@ export class ChatService {
           // Expired block cleanup
           this.skipPairs.delete(pairKey);
         }
+      }
+
+      const isBlockedPair = await this.isBlockedLoggedInPair(user1, user2);
+      if (isBlockedPair) {
+        this.queue.addUser(user1);
+        this.queue.addUser(user2);
+        match = this.queue.findMatch();
+        continue;
       }
 
       const conversationId = await this.createOrActivateConversation(user1, user2);
@@ -263,6 +272,24 @@ export class ChatService {
     if (identity?.type === "user") return identity.userId;
     if (identity?.type === "guest") return identity.guestId;
     return socketId;
+  }
+
+  private getLoggedInUserIdFromSocket(socketId: SocketId): string | null {
+    const socket = this.io.sockets.get(socketId);
+    const identity = socket?.data?.identity;
+    if (identity?.type === "user") return identity.userId;
+    return null;
+  }
+
+  private async isBlockedLoggedInPair(
+    socketIdA: SocketId,
+    socketIdB: SocketId
+  ): Promise<boolean> {
+    const userIdA = this.getLoggedInUserIdFromSocket(socketIdA);
+    const userIdB = this.getLoggedInUserIdFromSocket(socketIdB);
+
+    if (!userIdA || !userIdB) return false;
+    return this.blockService.isBlockedEitherDirection(userIdA, userIdB);
   }
 
   private async createOrActivateConversation(

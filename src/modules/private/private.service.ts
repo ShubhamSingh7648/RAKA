@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import { AppError } from "../../utils/errors/app.error";
 import { FriendService } from "../friend/friend.service";
+import { BlockService } from "../block/block.service";
 import { User } from "../user/user.model";
 import {
   buildConversationParticipantsKey,
@@ -33,6 +34,8 @@ interface MarkDeliveredParams {
 }
 
 export class PrivateService {
+  private blockService = new BlockService();
+
   constructor(private friendService: FriendService) {}
 
   private isDuplicateKeyError(err: unknown) {
@@ -51,6 +54,14 @@ export class PrivateService {
 
     if (userId === friendUserId) {
       throw new AppError("Cannot open private chat with yourself", 400);
+    }
+
+    const isBlocked = await this.blockService.isBlockedEitherDirection(
+      userId,
+      friendUserId
+    );
+    if (isBlocked) {
+      throw new AppError("Private chat is blocked between these users", 403);
     }
 
     const isFriend = await this.friendService.areFriends(userId, friendUserId);
@@ -126,6 +137,17 @@ export class PrivateService {
       await conversation.save();
     }
 
+    if (
+      conversation &&
+      Array.isArray(conversation.hiddenBy) &&
+      conversation.hiddenBy.includes(userId)
+    ) {
+      conversation.hiddenBy = conversation.hiddenBy.filter(
+        (hiddenUserId) => hiddenUserId !== userId
+      );
+      await conversation.save();
+    }
+
     if (!conversation) {
       throw new AppError("Failed to open private conversation", 500);
     }
@@ -185,6 +207,13 @@ export class PrivateService {
             createdAt: message.createdAt,
           },
           updatedAt: message.createdAt,
+        },
+        $pull: {
+          hiddenBy: {
+            $in: conversation.participants.map((participantId) =>
+              participantId.toString()
+            ),
+          },
         },
       }
     );
@@ -252,6 +281,7 @@ export class PrivateService {
     const conversations = await Conversation.find({
       participants: userId,
       type: "private",
+      hiddenBy: { $ne: userId },
     })
       .sort({ updatedAt: -1 })
       .limit(safeLimit)
@@ -369,10 +399,55 @@ export class PrivateService {
   }
 
   async deletePrivateConversation(userId: string, conversationId: string) {
-    const conversation = await this.assertConversationMember(userId, conversationId);
+    if (!mongoose.Types.ObjectId.isValid(conversationId)) {
+      throw new AppError("Invalid conversationId", 400);
+    }
 
-    await Message.deleteMany({ conversationId: conversation._id });
-    await Conversation.deleteOne({ _id: conversation._id });
+    const conversation = await Conversation.findById(conversationId).lean();
+    if (!conversation) {
+      throw new AppError("Conversation not found", 404);
+    }
+    if (conversation.type !== "private") {
+      throw new AppError("Conversation is not private", 400);
+    }
+
+    const isParticipant = conversation.participants.some(
+      (participantId) => participantId.toString() === userId
+    );
+    if (!isParticipant) {
+      throw new AppError("Not authorized for this conversation", 403);
+    }
+
+    const hiddenBy = Array.isArray(conversation.hiddenBy)
+      ? conversation.hiddenBy.map((hiddenUserId) => String(hiddenUserId))
+      : [];
+
+    if (!hiddenBy.includes(userId)) {
+      const updated = await Conversation.findByIdAndUpdate(
+        conversation._id,
+        {
+          $addToSet: { hiddenBy: userId },
+          $set: { isActive: false },
+        },
+        { new: true, lean: true }
+      );
+
+      if (updated) {
+        const hiddenBySet = new Set(
+          Array.isArray(updated.hiddenBy)
+            ? updated.hiddenBy.map((hiddenUserId) => String(hiddenUserId))
+            : []
+        );
+        const allParticipantsHidden = updated.participants.every((participantId) =>
+          hiddenBySet.has(participantId.toString())
+        );
+
+        if (allParticipantsHidden) {
+          await Message.deleteMany({ conversationId: updated._id });
+          await Conversation.deleteOne({ _id: updated._id });
+        }
+      }
+    }
 
     return {
       conversationId: conversation._id.toString(),
@@ -402,6 +477,26 @@ export class PrivateService {
 
     if (!isParticipant) {
       throw new AppError("Not authorized for this conversation", 403);
+    }
+
+    const isHiddenForUser =
+      Array.isArray(conversation.hiddenBy) &&
+      conversation.hiddenBy.some((hiddenUserId) => hiddenUserId === userId);
+    if (isHiddenForUser) {
+      throw new AppError("Conversation not found", 404);
+    }
+
+    const otherParticipant = conversation.participants.find(
+      (participantId) => participantId.toString() !== userId
+    );
+    if (otherParticipant) {
+      const isBlocked = await this.blockService.isBlockedEitherDirection(
+        userId,
+        otherParticipant.toString()
+      );
+      if (isBlocked) {
+        throw new AppError("Conversation is blocked between users", 403);
+      }
     }
 
     return conversation;

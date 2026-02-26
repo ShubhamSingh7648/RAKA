@@ -85,6 +85,7 @@ registerChatHandlers(io);
 registerPrivateHandlers(io);
 
 let isShuttingDown = false;
+let isHttpServerListening = false;
 
 const shutdown = async (reason: string, err?: unknown) => {
   if (isShuttingDown) return;
@@ -105,15 +106,18 @@ const shutdown = async (reason: string, err?: unknown) => {
   try {
     io.close();
 
-    await new Promise<void>((resolve, reject) => {
-      httpServer.close((closeErr) => {
-        if (closeErr) {
-          reject(closeErr);
-          return;
-        }
-        resolve();
+    if (isHttpServerListening) {
+      await new Promise<void>((resolve, reject) => {
+        httpServer.close((closeErr) => {
+          if (closeErr) {
+            reject(closeErr);
+            return;
+          }
+          resolve();
+        });
       });
-    });
+      isHttpServerListening = false;
+    }
 
     await mongoose.disconnect();
     clearTimeout(forceExitTimer);
@@ -128,9 +132,22 @@ const startServer = async () => {
   await connectDB();
 
   httpServer.listen(serverConfig.PORT, () => {
+    isHttpServerListening = true;
     logger.info(`Server is running on port ${serverConfig.PORT}`);
   });
 };
+
+httpServer.on("error", (err: NodeJS.ErrnoException) => {
+  if (err.code === "EADDRINUSE") {
+    logger.error(
+      `Port ${serverConfig.PORT} is already in use. Stop the other process or change PORT.`
+    );
+    process.exit(1);
+    return;
+  }
+
+  void shutdown("httpServer error", err);
+});
 
 process.on("SIGINT", () => {
   void shutdown("SIGINT");

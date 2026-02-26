@@ -10,6 +10,7 @@ import {
   PrivateServerToClientPayloads,
 } from "./private.contracts";
 import { PrivateService } from "./private.service";
+import { BlockService } from "../block/block.service";
 
 function buildPrivateError(err: unknown): PrivateErrorPayload {
   if (err instanceof AppError) {
@@ -51,6 +52,7 @@ export const registerPrivateHandlers = (io: Server) => {
   const privateNamespace = io.of("/private");
   const friendService = new FriendService();
   const privateService = new PrivateService(friendService);
+  const blockService = new BlockService();
 
   privateNamespace.use(async (socket, next) => {
     const handshakeToken = socket.handshake.auth?.token;
@@ -280,6 +282,64 @@ export const registerPrivateHandlers = (io: Server) => {
 
           socket.emit("delete_private_conversation_success", eventPayload);
           socket.to(roomId).emit("delete_private_conversation_success", eventPayload);
+        }
+      )
+    );
+
+    socket.on(
+      "list_blocked_users",
+      safeHandler(
+        socket,
+        async (payload: PrivateClientToServerPayloads["list_blocked_users"]) => {
+          const userId = requireUserId(socket);
+
+          const listed = await blockService.listBlockedUsers(userId, payload?.limit);
+          const eventPayload: PrivateServerToClientPayloads["blocked_users_listed"] = {
+            users: listed.users,
+          };
+          socket.emit("blocked_users_listed", eventPayload);
+        }
+      )
+    );
+
+    socket.on(
+      "block_user",
+      safeHandler(
+        socket,
+        async (payload: PrivateClientToServerPayloads["block_user"]) => {
+          const userId = requireUserId(socket);
+          const blockedUserId = payload?.userId?.trim();
+
+          if (!blockedUserId) {
+            throw new AppError("userId is required", 400);
+          }
+
+          await blockService.blockUser(userId, blockedUserId);
+          const eventPayload: PrivateServerToClientPayloads["user_blocked"] = {
+            blockedUserId,
+          };
+          socket.emit("user_blocked", eventPayload);
+        }
+      )
+    );
+
+    socket.on(
+      "unblock_user",
+      safeHandler(
+        socket,
+        async (payload: PrivateClientToServerPayloads["unblock_user"]) => {
+          const userId = requireUserId(socket);
+          const blockedUserId = payload?.userId?.trim();
+
+          if (!blockedUserId) {
+            throw new AppError("userId is required", 400);
+          }
+
+          await blockService.unblockUser(userId, blockedUserId);
+          const eventPayload: PrivateServerToClientPayloads["user_unblocked"] = {
+            unblockedUserId: blockedUserId,
+          };
+          socket.emit("user_unblocked", eventPayload);
         }
       )
     );
