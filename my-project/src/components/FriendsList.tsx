@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { apiFetch } from '../utils/apiFetch'
 
 type FriendItem = {
   userId: string
@@ -16,7 +17,7 @@ function formatDate(ts: number) {
 
 export default function FriendsList() {
   const navigate = useNavigate()
-  const { token } = useAuth()
+  const { token, refreshProfile } = useAuth()
   const [friends, setFriends] = useState<FriendItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -28,12 +29,12 @@ export default function FriendsList() {
     setLoading(true)
     setError('')
 
-    fetch(`${API_BASE_URL}/api/v1/friends`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      credentials: 'include',
-    })
+    apiFetch(
+      `${API_BASE_URL}/api/v1/friends`,
+      {},
+      token,
+      refreshProfile,
+    )
       .then(async (response) => {
         if (!response.ok) {
           throw new Error('Failed to load friends')
@@ -59,7 +60,7 @@ export default function FriendsList() {
     return () => {
       cancelled = true
     }
-  }, [token])
+  }, [refreshProfile, token])
 
   const hasFriends = useMemo(() => friends.length > 0, [friends.length])
 
@@ -95,13 +96,22 @@ export default function FriendsList() {
                       Friends since {formatDate(friend.friendsSince)}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/chat/private?friendUserId=${friend.userId}`)}
-                    className="rounded-md border border-violet-500/35 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-200"
-                  >
-                    Open Chat
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/chat/profile/${friend.userId}`)}
+                      className="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/chat/private?friendUserId=${friend.userId}`)}
+                      className="rounded-md border border-violet-500/35 bg-violet-500/15 px-3 py-1.5 text-xs font-medium text-violet-200"
+                    >
+                      Open Chat
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

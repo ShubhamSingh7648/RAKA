@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { io, type Socket } from 'socket.io-client'
+import Logo from './Logo'
 import LeftSidebar, { type PrivateConversationItem } from './LeftSidebar'
 import AuthModal from './AuthModal'
 import ProfileEditModal from './ProfileEditModal'
@@ -22,22 +23,10 @@ export default function AppLayout() {
   const selectedAnonymous = location.pathname === '/chat/random'
   const selectedFriends = location.pathname === '/chat/friends'
   const selectedPrivate = location.pathname.startsWith('/chat/private')
+  const selectedProfile = location.pathname.startsWith('/chat/profile')
   const selectedConversationId = location.pathname.startsWith('/chat/private/')
     ? location.pathname.replace('/chat/private/', '')
     : null
-  const query = new URLSearchParams(location.search)
-  const selectedConversation = sidebarConversations.find(
-    (conversation) => conversation.conversationId === selectedConversationId,
-  )
-  const headerTitle = (() => {
-    if (location.pathname === '/chat') return 'No chat selected'
-    if (location.pathname === '/chat/random') return 'Stranger'
-    if (location.pathname === '/chat/friends') return 'Friends'
-    if (location.pathname.startsWith('/chat/private/')) {
-      return selectedConversation?.name || query.get('name')?.trim() || 'Conversation'
-    }
-    return 'No chat selected'
-  })()
   const refreshPrivateConversations = useCallback(
     (privateSocket: Socket) => {
       privateSocket.emit('list_private_conversations')
@@ -209,7 +198,7 @@ export default function AppLayout() {
                 >
                   Menu
                 </button>
-                <span>{headerTitle}</span>
+                <Logo size="sm" />
               </div>
               <div className="flex items-center gap-2">
                 {isAuthenticated ? (
@@ -244,13 +233,17 @@ export default function AppLayout() {
                 type="button"
                 onClick={() => navigate('/chat/random')}
                 className={[
-                  'rounded-md px-2 py-2 text-xs font-medium',
+                  'flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-medium',
                   selectedAnonymous
                     ? 'bg-violet-500/20 text-violet-200'
                     : 'bg-slate-900 text-slate-300',
                 ].join(' ')}
               >
-                Anonymous
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 10.5 12 3l9 7.5" />
+                  <path d="M5 9.5V21h14V9.5" />
+                </svg>
+                Home
               </button>
               <button
                 type="button"
@@ -258,25 +251,34 @@ export default function AppLayout() {
                   navigate(selectedConversationId ? `/chat/private/${selectedConversationId}` : '/chat/private')
                 }
                 className={[
-                  'rounded-md px-2 py-2 text-xs font-medium',
+                  'flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-medium',
                   selectedPrivate
                     ? 'bg-violet-500/20 text-violet-200'
                     : 'bg-slate-900 text-slate-300',
                 ].join(' ')}
               >
-                Private
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 6h18" />
+                  <path d="M3 12h18" />
+                  <path d="M3 18h18" />
+                </svg>
+                Chats
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/chat/friends')}
+                onClick={() => navigate('/chat/profile')}
                 className={[
-                  'rounded-md px-2 py-2 text-xs font-medium',
-                  selectedFriends
+                  'flex items-center justify-center gap-1 rounded-md px-2 py-2 text-xs font-medium',
+                  selectedProfile
                     ? 'bg-violet-500/20 text-violet-200'
                     : 'bg-slate-900 text-slate-300',
                 ].join(' ')}
               >
-                Friends
+                <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="8" r="4" />
+                  <path d="M4 21a8 8 0 0 1 16 0" />
+                </svg>
+                You
               </button>
             </div>
           </nav>

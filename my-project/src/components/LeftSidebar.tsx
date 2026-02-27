@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import Logo from './Logo'
 
 export type AnonymousChatItem = {
   active: boolean
@@ -66,7 +67,7 @@ export default function LeftSidebar({
   return (
     <aside className="h-full w-full bg-slate-950 text-slate-100">
       <div className="flex h-14 items-center justify-between border-b border-slate-800 px-4">
-        <h2 className="text-sm font-semibold tracking-wide">Chats</h2>
+        <Logo size="md" />
         {onClose && (
           <button
             onClick={onClose}
@@ -93,7 +94,15 @@ export default function LeftSidebar({
             ].join(' ')}
           >
             <div className="flex items-center justify-between">
-              <span className="truncate text-sm font-medium text-slate-100">{anonymousName}</span>
+              <div className="flex min-w-0 items-center gap-2">
+                <div className="relative h-8 w-8 shrink-0 rounded-full bg-slate-800 text-xs text-violet-300 flex items-center justify-center">
+                  ?
+                  {hasAnonymous && (
+                    <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+                  )}
+                </div>
+                <span className="truncate text-sm font-medium text-slate-100">{anonymousName}</span>
+              </div>
               <UnreadBadge count={hasAnonymous ? anonymousChat?.unreadCount : undefined} />
             </div>
             <div className="mt-1 truncate text-xs text-slate-400">{anonymousSubtitle}</div>
@@ -114,7 +123,22 @@ export default function LeftSidebar({
               : 'border-slate-800 bg-slate-900 hover:border-violet-500/20 hover:bg-slate-800',
           ].join(' ')}
         >
-          <div className="text-sm font-medium text-slate-100">Friends</div>
+          <div className="flex items-center gap-2">
+            <svg
+              viewBox="0 0 24 24"
+              className="h-4 w-4 shrink-0 text-slate-300"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <circle cx="9" cy="9" r="3" />
+              <circle cx="16" cy="8" r="2.5" />
+              <path d="M4 19a5 5 0 0 1 10 0" />
+              <path d="M13 19a4 4 0 0 1 7 0" />
+            </svg>
+            <div className="text-sm font-medium text-slate-100">Friends</div>
+          </div>
           <div className="mt-1 text-xs text-slate-400">Open friend list</div>
         </button>
 
@@ -137,11 +161,16 @@ export default function LeftSidebar({
                     onClick={() => handlePrivateClick(chat.conversationId)}
                     className="min-w-0 flex-1 text-left"
                   >
-                    <div className="flex items-center">
-                      <span className="truncate text-sm font-medium text-slate-100">
-                        {chat.name}
-                      </span>
-                      <UnreadBadge count={chat.unreadCount} />
+                    <div className="flex items-center gap-2">
+                      <div className="h-8 w-8 shrink-0 rounded-full bg-slate-800 text-xs text-violet-300 flex items-center justify-center">
+                        {(chat.name || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex min-w-0 items-center">
+                        <span className="truncate text-sm font-medium text-slate-100">
+                          {chat.name}
+                        </span>
+                        <UnreadBadge count={chat.unreadCount} />
+                      </div>
                     </div>
                     <div className="mt-1 truncate text-xs text-slate-400">
                       {chat.lastMessagePreview || 'No messages yet'}

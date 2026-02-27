@@ -119,7 +119,7 @@ export default function AnonymousChat() {
             <div key={msg.id} className={`flex ${own ? 'justify-end' : 'justify-start'}`}>
               <div
                 className={[
-                  'max-w-[75%] rounded-xl border px-3 py-2 text-sm',
+                  'max-w-[75%] min-w-0 rounded-xl border px-3 py-2 text-sm break-words [overflow-wrap:anywhere]',
                   own
                     ? 'border-violet-500/30 bg-violet-500/15 text-violet-100'
                     : 'border-slate-800 bg-slate-900 text-slate-100',

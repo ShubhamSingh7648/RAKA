@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
+import Logo from './Logo'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
@@ -75,6 +76,9 @@ export default function AuthModal({ open, onClose }: AuthModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
       <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-5 text-slate-100">
+        <div className="mb-4 flex justify-center">
+          <Logo size="sm" />
+        </div>
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">{mode === 'login' ? 'Login' : 'Create account'}</h3>
           <button

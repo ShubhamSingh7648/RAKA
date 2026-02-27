@@ -4,6 +4,8 @@ import AppLayout from './components/AppLayout'
 import AnonymousChat from './components/anonymous/AnonymousChat'
 import FriendsList from './components/FriendsList'
 import PrivateChat from './components/PrivateChat'
+import ProfilePage from './components/ProfilePage'
+import UserProfilePage from './components/UserProfilePage'
 import { useAuth } from './context/AuthContext'
 
 function RootRedirect({ authenticated }: { authenticated: boolean }) {
@@ -79,6 +81,22 @@ function App() {
             element={
               <ProtectedPrivateRoute authenticated={isAuthenticated}>
                 <FriendsList />
+              </ProtectedPrivateRoute>
+            }
+          />
+          <Route
+            path="profile"
+            element={
+              <ProtectedPrivateRoute authenticated={isAuthenticated}>
+                <ProfilePage />
+              </ProtectedPrivateRoute>
+            }
+          />
+          <Route
+            path="profile/:userId"
+            element={
+              <ProtectedPrivateRoute authenticated={isAuthenticated}>
+                <UserProfilePage />
               </ProtectedPrivateRoute>
             }
           />
