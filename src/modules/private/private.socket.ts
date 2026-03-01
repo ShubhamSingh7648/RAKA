@@ -278,6 +278,7 @@ export const registerPrivateHandlers = (io: Server) => {
               conversationId: loaded.conversationId,
               messages: loaded.messages,
               nextCursor: loaded.nextCursor,
+              partnerProfile: loaded.partnerProfile,
             };
           socket.emit("private_messages_loaded", eventPayload);
         }

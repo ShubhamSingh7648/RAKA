@@ -8,6 +8,7 @@ import ProfileEditModal from './ProfileEditModal'
 import RightSidebar from './RightSidebar'
 import { useAuth } from '../context/AuthContext'
 import { useChatSocket } from '../hooks/useChatSocket'
+import { PRIVATE_SOCKET_URL } from '../config/runtime'
 
 export default function AppLayout() {
   const { token, user, isAuthenticated, logout } = useAuth()
@@ -50,7 +51,7 @@ export default function AppLayout() {
   useEffect(() => {
     if (!token) return
 
-    const privateSocket = io('http://localhost:3001/private', {
+    const privateSocket = io(PRIVATE_SOCKET_URL, {
       transports: ['websocket'],
       auth: { token },
     })

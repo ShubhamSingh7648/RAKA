@@ -1,11 +1,18 @@
 import { Request, Response } from "express";
 import { loginUser, refreshAccessToken, registerUser } from "./auth.service";
+import { serverConfig } from "../../config";
 
 const REFRESH_COOKIE_NAME = "refreshToken";
+const isProduction = serverConfig.NODE_ENV === "production";
+const sameSite =
+  isProduction && serverConfig.COOKIE_SAMESITE === "lax"
+    ? "none"
+    : serverConfig.COOKIE_SAMESITE;
 const REFRESH_COOKIE_OPTIONS = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "strict" as const,
+  secure: isProduction || sameSite === "none",
+  sameSite,
+  domain: serverConfig.COOKIE_DOMAIN,
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 

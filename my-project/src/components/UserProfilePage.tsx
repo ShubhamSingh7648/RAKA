@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { API_BASE_URL } from '../config/runtime'
+import { apiFetch } from '../utils/apiFetch'
 
 type PublicUserProfile = {
   userId: string
@@ -10,8 +12,6 @@ type PublicUserProfile = {
   createdAt?: string
   joinedAt?: string
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
 function formatJoinedDate(raw?: string) {
   if (!raw) return 'Unknown'
@@ -41,21 +41,13 @@ export default function UserProfilePage() {
     setError('')
 
     const run = async () => {
-      const doFetch = async () => {
-        return fetch(`${API_BASE_URL}/api/v1/users/${userId}`, {
-          credentials: 'include',
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt') || token}`,
-          },
-        })
-      }
-
       try {
-        let response = await doFetch()
-        if (response.status === 401) {
-          await refreshProfile()
-          response = await doFetch()
-        }
+        const response = await apiFetch(
+          `${API_BASE_URL}/api/v1/users/${userId}`,
+          {},
+          token,
+          refreshProfile,
+        )
 
         if (response.status === 404) {
           throw new Error('User not found')
@@ -99,7 +91,7 @@ export default function UserProfilePage() {
           onClick={() => navigate(-1)}
           className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-300 transition hover:border-slate-500 hover:text-slate-100"
         >
-          ← Back
+          {'<- Back'}
         </button>
 
         {loading && (

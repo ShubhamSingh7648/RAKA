@@ -7,6 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
+import { API_BASE_URL } from '../config/runtime'
 
 export type AuthUser = {
   _id: string
@@ -29,8 +30,6 @@ type AuthContextValue = {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined)
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
 async function fetchMe(token: string): Promise<AuthUser | null> {
   const response = await fetch(`${API_BASE_URL}/api/v1/me`, {

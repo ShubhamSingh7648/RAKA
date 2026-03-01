@@ -258,6 +258,13 @@ export class PrivateService {
     const nextCursor =
       messages.length === safeLimit ? messages[messages.length - 1]._id.toString() : null;
 
+    const partnerId = conversation.participants
+      .map((participantId) => participantId.toString())
+      .find((participantId) => participantId !== userId);
+    const partner = partnerId
+      ? await User.findById(partnerId).select("_id username displayPicture").lean()
+      : null;
+
     return {
       conversationId: conversation._id.toString(),
       messages: messages
@@ -272,6 +279,16 @@ export class PrivateService {
         }))
         .reverse(),
       nextCursor,
+      partnerProfile: partner
+        ? {
+            userId: partner._id.toString(),
+            username: partner.username,
+            displayPicture:
+              typeof partner.displayPicture === "string"
+                ? partner.displayPicture
+                : "",
+          }
+        : null,
     };
   }
 

@@ -6,6 +6,7 @@ export interface IUser extends Document {
   passwordHash: string;
   bio?: string;
   displayPicture?: string;
+  displayPicturePublicId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -36,6 +37,11 @@ const userSchema = new Schema<IUser>(
       default: "",
     },
     displayPicture: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    displayPicturePublicId: {
       type: String,
       trim: true,
       default: "",

@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import mongoose from "mongoose";
+import helmet from "helmet";
 
 import { serverConfig } from "./config";
 import v1Router from "./router/v1/index.router";
@@ -16,6 +17,10 @@ import { registerChatHandlers } from "./modules/chat/chat.socket";
 import { registerPrivateHandlers } from "./modules/private/private.socket";
 
 const app = express();
+app.disable("x-powered-by");
+if (serverConfig.NODE_ENV === "production") {
+  app.set("trust proxy", 1);
+}
 
 const defaultDevOrigins = [
   "http://localhost:5500",
@@ -60,7 +65,8 @@ app.use(
   })
 );
 
-app.use(express.json());
+app.use(helmet());
+app.use(express.json({ limit: "512kb" }));
 app.use(cookieParser());
 app.use(correlationIdMiddleware);
 

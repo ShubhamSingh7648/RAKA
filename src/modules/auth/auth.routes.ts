@@ -29,8 +29,19 @@ const registerLimiter = rateLimit({
   },
 });
 
+const refreshLimiter = rateLimit({
+  windowMs: serverConfig.AUTH_REFRESH_WINDOW_MS,
+  max: serverConfig.AUTH_REFRESH_MAX_ATTEMPTS,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many refresh attempts. Please try again later.",
+  },
+});
+
 router.post("/register", registerLimiter, validate(registerSchema), register);
 router.post("/login", loginLimiter, validate(loginSchema), login);
-router.post("/refresh", refreshToken);
+router.post("/refresh", refreshLimiter, refreshToken);
 
 export default router;

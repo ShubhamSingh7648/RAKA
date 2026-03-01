@@ -15,16 +15,16 @@
   "dependencies": {
     "@types/cookie-parser": "^1.4.10",
     "bcrypt": "^6.0.0",
+    "cloudinary": "^2.8.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.2.1",
-    "react-router-dom": "^7.13.1",
     "socket.io": "^4.8.3",
-    "socket.io-client": "^4.8.3",
     "uuid": "^13.0.0",
     "winston": "^3.19.0",
     "zod": "^4.3.6"

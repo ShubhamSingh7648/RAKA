@@ -26,6 +26,11 @@ export interface PrivateServerToClientPayloads {
       readBy: string[];
     }>;
     nextCursor: string | null;
+    partnerProfile: {
+      userId: string;
+      username: string;
+      displayPicture: string;
+    } | null;
   };
   private_conversations_listed: {
     conversations: Array<{

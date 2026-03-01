@@ -8,6 +8,12 @@ Set these variables before starting:
 - `MONGO_URL` (required)
 - `NODE_ENV` (`development` or `production`)
 - `CORS_ORIGINS` (comma-separated, recommended in production)
+- `COOKIE_SAMESITE` (`none` recommended for cross-site frontend/backend)
+- `COOKIE_DOMAIN` (optional)
+- `CLOUDINARY_CLOUD_NAME` (required for avatar uploads)
+- `CLOUDINARY_API_KEY` (required for avatar uploads)
+- `CLOUDINARY_API_SECRET` (required for avatar uploads)
+- `CLOUDINARY_UPLOAD_FOLDER` (optional, defaults to `connecta/profile-pictures`)
 
 Example:
 
@@ -17,6 +23,12 @@ JWT_SECRET=replace_with_a_long_random_secret
 MONGO_URL=mongodb://localhost:27017/connecta
 NODE_ENV=production
 CORS_ORIGINS=https://your-frontend-domain.com
+COOKIE_SAMESITE=none
+COOKIE_DOMAIN=
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+CLOUDINARY_UPLOAD_FOLDER=connecta/profile-pictures
 ```
 
 ## 2) Build and Start
@@ -51,6 +63,12 @@ Optional custom endpoints:
 
 ```bash
 BASE_URL=http://localhost:3001 SOCKET_URL=http://localhost:3001/chat npm run test:smoke
+```
+
+Frontend build env:
+
+```bash
+VITE_API_BASE_URL=https://your-backend-domain.com
 ```
 
 ## 6) Failure Handling

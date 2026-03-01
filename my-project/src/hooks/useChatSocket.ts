@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
+import { CHAT_SOCKET_URL } from '../config/runtime'
 
 export type ChatStatus = 'connecting' | 'idle' | 'searching' | 'matched' | 'disconnected'
 
@@ -42,9 +43,6 @@ export type UseChatSocketResult = {
   emitStoppedTyping: () => void
   clearError: () => void
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
-const CHAT_SOCKET_URL = `${API_BASE_URL}/chat`
 
 type UseChatSocketArgs = {
   token: string

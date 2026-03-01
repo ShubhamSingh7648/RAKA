@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { io, type Socket } from 'socket.io-client'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { PRIVATE_SOCKET_URL } from '../config/runtime'
 
 type PrivateMessage = {
   id: string
@@ -17,7 +18,11 @@ type PrivateError = {
   statusCode?: number
 }
 
-const PRIVATE_SOCKET_URL = 'http://localhost:3001/private'
+type PartnerProfile = {
+  userId: string
+  username: string
+  displayPicture: string
+}
 
 function formatTime(ts: number) {
   return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -45,6 +50,7 @@ export default function PrivateChat() {
   const [nextCursor, setNextCursor] = useState<string | null>(null)
   const [isPartnerTyping, setIsPartnerTyping] = useState(false)
   const [isPartnerOnline, setIsPartnerOnline] = useState<boolean | null>(null)
+  const [partnerProfile, setPartnerProfile] = useState<PartnerProfile | null>(null)
 
   const friendUserId = useMemo(() => searchParams.get('friendUserId')?.trim() || '', [searchParams])
   const wordCount = useMemo(
@@ -53,7 +59,6 @@ export default function PrivateChat() {
   )
   const overWordLimit = wordCount > 30
 
-  // Effect 1: socket lifecycle (depends only on token)
   useEffect(() => {
     if (!token) return
 
@@ -92,10 +97,12 @@ export default function PrivateChat() {
         conversationId: loadedConversationId,
         messages: loadedMessages,
         nextCursor: loadedNextCursor,
+        partnerProfile: loadedPartnerProfile,
       }: {
         conversationId: string
         messages: Array<{ id: string; senderId: string; content: string; createdAt: number; readBy: string[] }>
         nextCursor: string | null
+        partnerProfile: PartnerProfile | null
       }) => {
         const requestedCursor = pendingLoadCursorRef.current
         pendingLoadCursorRef.current = null
@@ -103,6 +110,9 @@ export default function PrivateChat() {
         setLoadingHistory(false)
         setLoadingMore(false)
         setNextCursor(loadedNextCursor)
+        if (loadedPartnerProfile) {
+          setPartnerProfile(loadedPartnerProfile)
+        }
 
         const mapped = loadedMessages.map((m) => ({
           id: m.id,
@@ -212,7 +222,6 @@ export default function PrivateChat() {
     }
   }, [navigate, routeConversationId, token, user?._id])
 
-  // Effect 2: load conversation history when conversation changes
   useEffect(() => {
     markedReadRef.current.clear()
     setMessages([])
@@ -221,6 +230,7 @@ export default function PrivateChat() {
     setLoadingMore(false)
     setIsPartnerTyping(false)
     setIsPartnerOnline(null)
+    setPartnerProfile(null)
     pendingLoadCursorRef.current = null
 
     const socket = socketRef.current
@@ -231,7 +241,6 @@ export default function PrivateChat() {
     socket.emit('load_private_messages', { conversationId: routeConversationId, limit: 30 })
   }, [routeConversationId])
 
-  // Mark read (deduplicated)
   useEffect(() => {
     const socket = socketRef.current
     if (!socket || !routeConversationId || messages.length === 0 || !user?._id) return
@@ -244,14 +253,12 @@ export default function PrivateChat() {
     })
   }, [routeConversationId, messages, user?._id])
 
-  // Open chat by friendUserId when route conversation isn't set
   useEffect(() => {
     const socket = socketRef.current
     if (!socket || routeConversationId || !friendUserId) return
     socket.emit('open_private_chat', { friendUserId })
   }, [routeConversationId, friendUserId])
 
-  // Pagination: load older messages when top sentinel enters viewport
   useEffect(() => {
     const wrap = messagesWrapRef.current
     const sentinel = paginationSentinelRef.current
@@ -337,22 +344,38 @@ export default function PrivateChat() {
 
   return (
     <div className="flex h-full flex-col bg-slate-950 text-slate-100">
-      {error && <div className="border-b border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs text-rose-200">{error}</div>}
-      {isPartnerOnline !== null && (
-        <div
-          className={[
-            'border-b px-4 py-2 text-xs',
-            isPartnerOnline
-              ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-200'
-              : 'border-slate-800 text-slate-400',
-          ].join(' ')}
-        >
-          {isPartnerOnline ? 'Partner online' : 'Partner offline'}
+      <div className="border-b border-slate-800 bg-slate-900/70 px-4 py-3">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border border-slate-700 bg-slate-800">
+            {partnerProfile?.displayPicture ? (
+              <img
+                src={partnerProfile.displayPicture}
+                alt={`${partnerProfile.username} avatar`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm font-semibold text-slate-300">
+                {(partnerProfile?.username || '?').charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold text-slate-100">
+              {partnerProfile?.username || 'Private chat'}
+            </div>
+            <div className="text-xs text-slate-400">
+              {isPartnerTyping
+                ? 'Typing...'
+                : isPartnerOnline === null
+                  ? 'Loading status...'
+                  : isPartnerOnline
+                    ? 'Online'
+                    : 'Offline'}
+            </div>
+          </div>
         </div>
-      )}
-      {isPartnerTyping && (
-        <div className="border-b border-slate-800 px-4 py-2 text-xs text-slate-400">typing...</div>
-      )}
+      </div>
+      {error && <div className="border-b border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs text-rose-200">{error}</div>}
 
       <div ref={messagesWrapRef} className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
         {nextCursor && (
@@ -380,7 +403,7 @@ export default function PrivateChat() {
                 <div>{msg.content}</div>
                 <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
                   <span>{formatTime(msg.createdAt)}</span>
-                  {own && <span>{msg.readBy.length > 0 ? '✓✓' : '✓'}</span>}
+                  {own && <span>{msg.readBy.length > 0 ? 'read' : 'sent'}</span>}
                 </div>
               </div>
             </div>

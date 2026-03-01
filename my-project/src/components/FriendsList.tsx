@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { apiFetch } from '../utils/apiFetch'
+import { API_BASE_URL } from '../config/runtime'
 
 type FriendItem = {
   userId: string
   username: string
   friendsSince: number
 }
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
 function formatDate(ts: number) {
   return new Date(ts).toLocaleDateString()

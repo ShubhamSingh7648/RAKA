@@ -3,11 +3,13 @@ import authRoutes from "../../modules/auth/auth.routes";
 import { authenticate, AuthRequest } from "../../middleware/auth.middleware";
 import { User } from "../../modules/user/user.model";
 import { FriendService } from "../../modules/friend/friend.service";
+import uploadRoutes from "../../modules/upload/upload.routes";
 
 
 const router = Router();
 const friendService = new FriendService();
 router.use("/auth", authRoutes);
+router.use("/uploads", uploadRoutes);
 
 router.get("/me", authenticate, async (req: AuthRequest, res, next: NextFunction) => {
   try {
@@ -53,10 +55,11 @@ router.patch("/me", authenticate, async (req: AuthRequest, res, next: NextFuncti
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const { username, bio, displayPicture } = req.body as {
+    const { username, bio, displayPicture, displayPicturePublicId } = req.body as {
       username?: string;
       bio?: string;
       displayPicture?: string;
+      displayPicturePublicId?: string;
     };
     const update: Record<string, string> = {};
 
@@ -98,24 +101,35 @@ router.patch("/me", authenticate, async (req: AuthRequest, res, next: NextFuncti
       const trimmedPicture = displayPicture.trim();
       if (!trimmedPicture) {
         update.displayPicture = "";
+        update.displayPicturePublicId = "";
       } else {
-        const isDataImage = /^data:image\/(png|jpeg|jpg|webp);base64,/i.test(
-          trimmedPicture
-        );
-        if (!isDataImage) {
+        let parsedUrl: URL;
+        try {
+          parsedUrl = new URL(trimmedPicture);
+        } catch {
           return res.status(400).json({
             success: false,
-            message: "displayPicture must be a PNG, JPG, or WEBP data URL",
+            message: "displayPicture must be a valid HTTPS URL",
           });
         }
-        if (trimmedPicture.length > 1_500_000) {
+        if (parsedUrl.protocol !== "https:") {
           return res.status(400).json({
             success: false,
-            message: "displayPicture is too large",
+            message: "displayPicture must use HTTPS",
+          });
+        }
+        if (!/\.cloudinary\.com$/i.test(parsedUrl.hostname)) {
+          return res.status(400).json({
+            success: false,
+            message: "displayPicture must be a Cloudinary URL",
           });
         }
         update.displayPicture = trimmedPicture;
       }
+    }
+
+    if (typeof displayPicturePublicId === "string") {
+      update.displayPicturePublicId = displayPicturePublicId.trim();
     }
 
     const updated = await User.findByIdAndUpdate(

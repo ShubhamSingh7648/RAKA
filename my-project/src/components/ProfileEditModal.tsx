@@ -1,11 +1,24 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+import { API_BASE_URL } from '../config/runtime'
 
 type ProfileEditModalProps = {
   open: boolean
   onClose: () => void
+}
+
+type CloudinarySignaturePayload = {
+  cloudName: string
+  apiKey: string
+  folder: string
+  timestamp: number
+  publicId: string
+  signature: string
+}
+
+type UploadedImage = {
+  secureUrl: string
+  publicId: string
 }
 
 export default function ProfileEditModal({ open, onClose }: ProfileEditModalProps) {
@@ -13,6 +26,7 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
   const [username, setUsername] = useState('')
   const [bio, setBio] = useState('')
   const [displayPicture, setDisplayPicture] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
@@ -21,6 +35,7 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
     setUsername(user?.username || '')
     setBio(user?.bio || '')
     setDisplayPicture(user?.displayPicture || '')
+    setSelectedFile(null)
     setError('')
   }, [open, user?.bio, user?.displayPicture, user?.username])
 
@@ -38,13 +53,72 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setDisplayPicture(reader.result)
-      }
+    setError('')
+    setSelectedFile(file)
+    setDisplayPicture(URL.createObjectURL(file))
+  }
+
+  const uploadToCloudinary = async (file: File): Promise<UploadedImage> => {
+    if (!token) {
+      throw new Error('Unauthorized')
     }
-    reader.readAsDataURL(file)
+
+    const signResponse = await fetch(`${API_BASE_URL}/api/v1/uploads/profile/signature`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+
+    if (!signResponse.ok) {
+      const payload = (await signResponse.json().catch(() => ({}))) as { message?: string }
+      throw new Error(payload?.message || 'Unable to get upload signature')
+    }
+
+    const signPayload = (await signResponse.json()) as { data?: CloudinarySignaturePayload }
+    const signatureData = signPayload?.data
+
+    if (!signatureData) {
+      throw new Error('Invalid upload signature response')
+    }
+
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('api_key', signatureData.apiKey)
+    formData.append('timestamp', String(signatureData.timestamp))
+    formData.append('signature', signatureData.signature)
+    formData.append('folder', signatureData.folder)
+    formData.append('public_id', signatureData.publicId)
+
+    const uploadResponse = await fetch(
+      `https://api.cloudinary.com/v1_1/${signatureData.cloudName}/image/upload`,
+      {
+        method: 'POST',
+        body: formData,
+      },
+    )
+
+    if (!uploadResponse.ok) {
+      const uploadErrorPayload = (await uploadResponse.json().catch(() => ({}))) as {
+        error?: { message?: string }
+      }
+      throw new Error(uploadErrorPayload?.error?.message || 'Cloudinary upload failed')
+    }
+
+    const uploadPayload = (await uploadResponse.json()) as {
+      secure_url?: string
+      public_id?: string
+    }
+
+    if (!uploadPayload.secure_url || !uploadPayload.public_id) {
+      throw new Error('Cloudinary upload response is invalid')
+    }
+
+    return {
+      secureUrl: uploadPayload.secure_url,
+      publicId: uploadPayload.public_id,
+    }
   }
 
   const save = async () => {
@@ -53,6 +127,15 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
     setError('')
 
     try {
+      let nextDisplayPicture = displayPicture
+      let nextDisplayPicturePublicId = ''
+
+      if (selectedFile) {
+        const uploadedImage = await uploadToCloudinary(selectedFile)
+        nextDisplayPicture = uploadedImage.secureUrl
+        nextDisplayPicturePublicId = uploadedImage.publicId
+      }
+
       const response = await fetch(`${API_BASE_URL}/api/v1/me`, {
         method: 'PATCH',
         credentials: 'include',
@@ -63,7 +146,8 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
         body: JSON.stringify({
           username,
           bio,
-          displayPicture,
+          displayPicture: nextDisplayPicture,
+          displayPicturePublicId: nextDisplayPicturePublicId,
         }),
       })
 
@@ -112,7 +196,10 @@ export default function ProfileEditModal({ open, onClose }: ProfileEditModalProp
             {displayPicture && (
               <button
                 type="button"
-                onClick={() => setDisplayPicture('')}
+                onClick={() => {
+                  setSelectedFile(null)
+                  setDisplayPicture('')
+                }}
                 className="rounded border border-slate-700 px-2 py-1 text-[11px] text-slate-300"
               >
                 Remove picture
